@@ -173,19 +173,31 @@ Promise.all([
       alertColor = '#ff3333';
     }
 
-    // --- Face centered detection (both in x and y) ---
-    const faceCenterX = (lx + rx) / 2;
-    const faceCenterY = (ly + ry) / 2;
+    // --- Face centered detection (both in x and y) using average of all landmarks ---
+    // Compute average x and y of all face landmarks
+    let avgX = 0;
+    let avgY = 0;
+    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+      const landmarks = results.multiFaceLandmarks[0];
+      for (const lm of landmarks) {
+        avgX += lm.x * canvas.width;
+        avgY += lm.y * canvas.height;
+      }
+      avgX /= landmarks.length;
+      avgY /= landmarks.length;
+    }
+    const faceCenterX = avgX;
+    const faceCenterY = avgY;
     const canvasCenterX = canvas.width / 2;
-    const canvasCenterY = canvas.height / 2;
+    const canvasCenterY = canvas.height / 1.5;
     const centerDistX = Math.abs(faceCenterX - canvasCenterX);
     const centerDistY = Math.abs(faceCenterY - canvasCenterY);
     let isXFramed = false;
-    if (centerDistX < (0.07 * canvas.width)) {
+    if (centerDistX < (0.10 * canvas.width)) {
       isXFramed = true;
     }
     let isYFramed = false;
-    if (centerDistY < (0.07 * canvas.height)) {
+    if (centerDistY < (0.10 * canvas.height)) {
       isYFramed = true;
     }
 
