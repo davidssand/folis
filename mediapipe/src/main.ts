@@ -158,12 +158,12 @@ Promise.all([
     const eyeDist = Math.hypot(lx - rx, ly - ry);
     const minEyeDist = 0.14 * canvas.width;
     const maxEyeDist = 0.19 * canvas.width;
-    let isFaceClose = false;
+    let isZFramed = false;
     let alertMsg = '';
     let alertColor = '';
     if (eyeDist > minEyeDist) {
         if (eyeDist < maxEyeDist) {
-            isFaceClose = true;
+            isZFramed = true;
         } else {
             alertMsg = 'Move farther from the camera';
             alertColor = '#ff3333';
@@ -180,62 +180,20 @@ Promise.all([
     const canvasCenterY = canvas.height / 2;
     const centerDistX = Math.abs(faceCenterX - canvasCenterX);
     const centerDistY = Math.abs(faceCenterY - canvasCenterY);
-    let isXCentered = false;
+    let isXFramed = false;
     if (centerDistX < (0.07 * canvas.width)) {
-      isXCentered = true;
+      isXFramed = true;
     }
-    let isYCentered = false;
+    let isYFramed = false;
     if (centerDistY < (0.07 * canvas.height)) {
-      isYCentered = true;
+      isYFramed = true;
     }
 
-    // --- Symmetric triangle detection (eyes and mouth) ---
-    // const A = eyeDist;
-    // const B = Math.hypot(lx - mx, ly - my);
-    // const C = Math.hypot(rx - mx, ry - my);
-    // const symmetry = Math.abs(B - C) < 0.15 * A;
-    // const eyesHorizontal = Math.abs(ly - ry) < 0.08 * A;
-    // let isSymmetric = false;
-    // if (symmetry && eyesHorizontal) {
-    //   isSymmetric = true;
-    // }
-
-    let lookingStraight = false;
-    let aimError = Math.abs(faceCenterX - nx)
-    if (aimError < (0.03 * canvas.width)) {
-        lookingStraight = true;
+    let isFramed = false;
+    if (isZFramed && isXFramed && isYFramed) {
+        isFramed = true;
     }
 
-    // --- Show "Take Picture!" if all conditions are met ---
-    let cameraLook = false;
-    if (isXCentered && isYCentered && lookingStraight && isFaceClose) {
-      cameraLook = true;
-      drawCanvasMessage(ctx, 'Camera look', '#3366ff', canvas.height - 70);
-    }
-
-    // --- Head tilt down detection (nose close to mouth vertically) ---
-    const lookingDown = Math.abs(ny - my) < 0.05 * canvas.height
-    let isHeadTiltedDown = false;
-    if (isXCentered && lookingStraight && isFaceClose && lookingDown) {
-        isHeadTiltedDown = true;
-        drawCanvasMessage(ctx, 'Head tilted down – good for bald check!', '#bba000', canvas.height - 40);
-    }
-
-    // --- Head tilt down and right detection (for lateral hair) ---
-    const lookingRight = (faceCenterX - nx > 0.03 * canvas.width)
-    let isHeadTiltedDownRight = false;
-    if (lookingDown && lookingRight) {
-        isHeadTiltedDownRight = true;
-        drawCanvasMessage(ctx, 'Head down & right – lateral hair view!', '#bb00aa', canvas.height - 20);
-    }
-
-    // --- Head tilt down and left detection (for lateral hair) ---
-    const lookingLeft = (nx - faceCenterX > 0.03 * canvas.width)
-    let isHeadTiltedDownLeft = false;
-    if (lookingDown && lookingLeft) {
-        isHeadTiltedDownLeft = true;
-        drawCanvasMessage(ctx, 'Head down & left – lateral hair view!', '#00bbcc', canvas.height - 0);
-    }
 
     // --- Show or clear alert ---
     if (alertMsg) {
@@ -246,9 +204,9 @@ Promise.all([
 
     // --- Info Table ---
     updateInfoTable({
-      lx, ly, rx, ry, eyeDist, isFaceClose, lookingStraight,
-      isXCentered, isYCentered, isHeadTiltedDown, isHeadTiltedDownRight, isHeadTiltedDownLeft, cameraLook,
-      canvasWidth: canvas.width, nx, ny, aimError,
+      lx, ly, rx, ry, eyeDist, 
+      isXFramed, isYFramed, isZFramed, isFramed,
+      canvasWidth: canvas.width, nx, ny, 
       pitch, yaw, roll
     });
 
