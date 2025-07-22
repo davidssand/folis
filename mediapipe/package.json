@@ -1,0 +1,12 @@
+{
+  "name": "mediapipe-face-landmarks",
+  "version": "1.0.0",
+  "description": "Minimal Mediapipe Face Landmarks app using TypeScript and camera.",
+  "scripts": {
+    "start": "serve ."
+  },
+  "devDependencies": {
+    "serve": "^14.2.0",
+    "typescript": "^5.8.3"
+  }
+}
