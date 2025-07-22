@@ -128,8 +128,8 @@ Promise.all([
     const noseCanvasY = ny;
 
     // Use zN (face normal) for direction
-    const lineLength = 200; // pixels
-    const yBias = 0.4; // Try values between 0.1 and 0.3 for your setup
+    const lineLength = 1000; // pixels
+    const yBias = 0.45; // Try values between 0.1 and 0.3 for your setup
     const endX = noseCanvasX + zN.x * lineLength;
     const endY = noseCanvasY + (zN.y - yBias) * lineLength;
 
@@ -252,15 +252,8 @@ Promise.all([
       pitch, yaw, roll
     });
 
-    // --- Draw all faces/landmarks ---
-    const highlightPoints = [
-      { idx: leftEyeIdx, color: '#00FF00' }, // Left eye center (green)
-      { idx: rightEyeIdx, color: '#0000FF' }, // Right eye center (blue)
-      { idx: noseIdx, color: '#FFFF00' },   // Nose tip (yellow)
-      { idx: mouthIdx, color: '#FF00FF' },  // Mouth center (magenta)
-    ];
     for (const faceLandmarks of results.multiFaceLandmarks) {
-      drawFaceMesh(ctx, faceLandmarks, canvas, highlightPoints, drawConnectors, drawLandmarks, FaceMesh);
+      drawFaceMesh(ctx, faceLandmarks, canvas, drawConnectors, drawLandmarks, FaceMesh);
     }
 
     ctx.restore();
