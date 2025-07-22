@@ -77,13 +77,15 @@ Promise.all([
     let isFaceClose = false;
     let alertMsg = '';
     let alertColor = '';
-    if (eyeDist > minEyeDist && eyeDist < maxEyeDist) {
-      isFaceClose = true;
-    } else if (eyeDist <= minEyeDist) {
+    if (eyeDist > minEyeDist) {
+        if (eyeDist < maxEyeDist) {
+            isFaceClose = true;
+        } else {
+            alertMsg = 'Move farther from the camera';
+            alertColor = '#ff3333';
+        }
+    } else {
       alertMsg = 'Move closer to the camera';
-      alertColor = '#ff3333';
-    } else if (eyeDist >= maxEyeDist) {
-      alertMsg = 'Move farther from the camera';
       alertColor = '#ff3333';
     }
 
@@ -95,36 +97,60 @@ Promise.all([
     const centerDistX = Math.abs(faceCenterX - canvasCenterX);
     const centerDistY = Math.abs(faceCenterY - canvasCenterY);
     let isXCentered = false;
-    if (centerDistX < 0.07 * canvas.width) {
+    if (centerDistX < (0.07 * canvas.width)) {
       isXCentered = true;
     }
     let isYCentered = false;
-    if (centerDistY < 0.07 * canvas.height) {
+    if (centerDistY < (0.07 * canvas.height)) {
       isYCentered = true;
     }
 
     // --- Symmetric triangle detection (eyes and mouth) ---
-    const A = eyeDist;
-    const B = Math.hypot(lx - mx, ly - my);
-    const C = Math.hypot(rx - mx, ry - my);
-    const symmetry = Math.abs(B - C) < 0.12 * A;
-    const eyesHorizontal = Math.abs(ly - ry) < 0.08 * A;
-    let isSymmetric = false;
-    if (symmetry && eyesHorizontal) {
-      isSymmetric = true;
+    // const A = eyeDist;
+    // const B = Math.hypot(lx - mx, ly - my);
+    // const C = Math.hypot(rx - mx, ry - my);
+    // const symmetry = Math.abs(B - C) < 0.15 * A;
+    // const eyesHorizontal = Math.abs(ly - ry) < 0.08 * A;
+    // let isSymmetric = false;
+    // if (symmetry && eyesHorizontal) {
+    //   isSymmetric = true;
+    // }
+
+    let lookingStraight = false;
+    let aimError = Math.abs(faceCenterX - nx)
+    if (aimError < (0.03 * canvas.width)) {
+        lookingStraight = true;
     }
 
     // --- Show "Take Picture!" if all conditions are met ---
-    if (isXCentered && isYCentered && isSymmetric && isFaceClose) {
-      drawCanvasMessage(ctx, 'Well Centered!', '#3366ff', canvas.height - 70);
+    let cameraLook = false;
+    if (isXCentered && isYCentered && lookingStraight && isFaceClose) {
+      cameraLook = true;
+      drawCanvasMessage(ctx, 'Camera look', '#3366ff', canvas.height - 70);
     }
 
     // --- Head tilt down detection (nose close to mouth vertically) ---
-    const verticalNoseMouthDist = Math.abs(ny - my);
+    const lookingDown = Math.abs(ny - my) < 0.05 * canvas.height
     let isHeadTiltedDown = false;
-    if (isXCentered && isSymmetric && isFaceClose && (verticalNoseMouthDist < 0.03 * canvas.height)) {
+    if (isXCentered && lookingStraight && isFaceClose && lookingDown) {
         isHeadTiltedDown = true;
         drawCanvasMessage(ctx, 'Head tilted down – good for bald check!', '#bba000', canvas.height - 40);
+    }
+
+    // --- Head tilt down and right detection (for lateral hair) ---
+    const lookingRight = (faceCenterX - nx > 0.03 * canvas.width)
+    let isHeadTiltedDownRight = false;
+    if (lookingDown && lookingRight) {
+        isHeadTiltedDownRight = true;
+        drawCanvasMessage(ctx, 'Head down & right – lateral hair view!', '#bb00aa', canvas.height - 20);
+    }
+
+    // --- Head tilt down and left detection (for lateral hair) ---
+    const lookingLeft = (nx - faceCenterX > 0.03 * canvas.width)
+    let isHeadTiltedDownLeft = false;
+    if (lookingDown && lookingLeft) {
+        isHeadTiltedDownLeft = true;
+        drawCanvasMessage(ctx, 'Head down & left – lateral hair view!', '#00bbcc', canvas.height - 0);
     }
 
     // --- Show or clear alert ---
@@ -136,7 +162,9 @@ Promise.all([
 
     // --- Info Table ---
     updateInfoTable({
-      lx, ly, rx, ry, eyeDist, isFaceClose, isSymmetric, isXCentered, isYCentered, isHeadTiltedDown, canvasWidth: canvas.width
+      lx, ly, rx, ry, eyeDist, isFaceClose, lookingStraight,
+      isXCentered, isYCentered, isHeadTiltedDown, isHeadTiltedDownRight, isHeadTiltedDownLeft, cameraLook,
+      canvasWidth: canvas.width, faceCenterX, nx, aimError
     });
 
     // --- Draw all faces/landmarks ---

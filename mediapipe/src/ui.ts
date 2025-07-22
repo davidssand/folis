@@ -30,7 +30,7 @@ export function clearAlert() {
   if (alertDiv) alertDiv.remove();
 }
 
-export function updateInfoTable(d: { lx: number; ly: number; rx: number; ry: number; eyeDist: number; isFaceClose: boolean; isSymmetric: boolean; isXCentered: boolean; isYCentered: boolean; isHeadTiltedDown: boolean; canvasWidth: number }) {
+export function updateInfoTable(d: Record<string, any>) {
   let infoTable = document.getElementById('face-info-table') as HTMLTableElement | null;
   if (!infoTable) {
     infoTable = document.createElement('table');
@@ -50,7 +50,7 @@ export function updateInfoTable(d: { lx: number; ly: number; rx: number; ry: num
     infoTable.innerHTML = `
       <thead>
         <tr>
-          <th style="text-align:left;">Info</th>
+          <th style="text-align:left;">Variable</th>
           <th style="text-align:left;">Value</th>
         </tr>
       </thead>
@@ -59,17 +59,25 @@ export function updateInfoTable(d: { lx: number; ly: number; rx: number; ry: num
     document.body.appendChild(infoTable);
   }
   const tbody = infoTable.querySelector('tbody')!;
-  tbody.innerHTML = `
-    <tr><td>Left Eye (x, y)</td><td>${d.lx.toFixed(1)}, ${d.ly.toFixed(1)}</td></tr>
-    <tr><td>Right Eye (x, y)</td><td>${d.rx.toFixed(1)}, ${d.ry.toFixed(1)}</td></tr>
-    <tr><td>Eye Distance</td><td>${d.eyeDist.toFixed(1)} px</td></tr>
-    <tr><td>Canvas Width</td><td>${d.canvasWidth.toFixed(1)} px</td></tr>
-    <tr><td>Face Close?</td><td style="color:${d.isFaceClose ? '#ff8800' : '#888'}">${d.isFaceClose ? 'Yes' : 'No'}</td></tr>
-    <tr><td>Symmetric?</td><td style="color:${d.isSymmetric ? '#3366ff' : '#888'}">${d.isSymmetric ? 'Yes' : 'No'}</td></tr>
-    <tr><td>X Centered?</td><td style="color:${d.isXCentered ? '#bb00cc' : '#888'}">${d.isXCentered ? 'Yes' : 'No'}</td></tr>
-    <tr><td>Y Centered?</td><td style="color:${d.isYCentered ? '#bb00cc' : '#888'}">${d.isYCentered ? 'Yes' : 'No'}</td></tr>
-    <tr><td>Head Tilted Down?</td><td style="color:${d.isHeadTiltedDown ? '#bba000' : '#888'}">${d.isHeadTiltedDown ? 'Yes' : 'No'}</td></tr>
-  `;
+  let rows = '';
+  for (const key in d) {
+    if (Object.prototype.hasOwnProperty.call(d, key)) {
+      const value = d[key];
+      let displayValue: string;
+      let style = '';
+      if (typeof value === 'number') {
+        displayValue = value.toFixed(2);
+      } else if (typeof value === 'boolean') {
+        displayValue = value ? 'Yes' : 'No';
+        // Optionally color booleans for visibility
+        style = `color:${value ? '#3366ff' : '#888'};font-weight:bold;`;
+      } else {
+        displayValue = String(value);
+      }
+      rows += `<tr><td>${key}</td><td style="${style}">${displayValue}</td></tr>`;
+    }
+  }
+  tbody.innerHTML = rows;
 }
 
 export function removeInfoTable() {

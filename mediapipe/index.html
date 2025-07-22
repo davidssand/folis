@@ -20,8 +20,8 @@
       justify-content: center;
     }
     video, canvas {
-      width: 480px;
-      height: 360px;
+      width: 720px;
+      height: 540px;
       margin: 8px;
       display: block;
       transform: scaleX(-1); /* Ensure not mirrored */
@@ -31,7 +31,7 @@
 <body>
   <div id="main-panel">
     <h1>Mediapipe Face Landmarks</h1>
-    <video id="video" autoplay muted playsinline></video>
+    <video id="video" autoplay muted playsinline style="display:none;"></video>
     <canvas id="output"></canvas>
   </div>
   <script type="module" src="./dist/main.js"></script>
