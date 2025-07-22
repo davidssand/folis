@@ -4,6 +4,9 @@ import { drawHeadOvalGuide, drawFaceMesh, drawCanvasMessage } from './drawing.js
 import { showAlert, clearAlert, updateInfoTable, removeInfoTable } from './ui.js';
 import { setupFaceMesh } from './faceMesh.js';
 
+let prevLineEndX: number | null = null;
+let prevLineEndY: number | null = null;
+
 // Load drawing utils and face mesh scripts
 const drawingUtilsScript = document.createElement('script');
 drawingUtilsScript.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js';
@@ -69,6 +72,87 @@ Promise.all([
     const rx = rightEye.x * canvas.width, ry = rightEye.y * canvas.height;
     const mx = mouth.x * canvas.width, my = mouth.y * canvas.height;
     const nx = nose.x * canvas.width, ny = nose.y * canvas.height;
+
+    // 3D coordinates for pose estimation
+    const leftEye3D = leftEye;
+    const rightEye3D = rightEye;
+    const nose3D = nose;
+    const mouth3D = mouth;
+
+    // --- Face rotation estimation (pitch, yaw, roll) ---
+    // Define face axes using 3D points
+    // X axis: from right eye to left eye
+    const eyesCenter = {
+      x: leftEye3D.x - rightEye3D.x,
+      y: leftEye3D.y - rightEye3D.y,
+      z: leftEye3D.z - rightEye3D.z
+    };
+    // Y axis: from nose to mouth
+    const noseMounthCenter = {
+      x: mouth3D.x - nose3D.x,
+      y: mouth3D.y - nose3D.y,
+      z: mouth3D.z - nose3D.z
+    };
+    // Z axis: cross product of X and Y
+    const crossProduct = {
+      x: eyesCenter.y * noseMounthCenter.z - eyesCenter.z * noseMounthCenter.y,
+      y: eyesCenter.z * noseMounthCenter.x - eyesCenter.x * noseMounthCenter.z,
+      z: eyesCenter.x * noseMounthCenter.y - eyesCenter.y * noseMounthCenter.x
+    };
+    // Normalize axes
+    function normalize(v: any) {
+      const len = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+      return { x: v.x / len, y: v.y / len, z: v.z / len };
+    }
+    const xN = normalize(eyesCenter);
+    const yN = normalize(noseMounthCenter);
+    const zN = normalize(crossProduct);
+
+    // Rotation matrix (columns are axes)
+    // [ xN.x yN.x zN.x ]
+    // [ xN.y yN.y zN.y ]
+    // [ xN.z yN.z zN.z ]
+    // Extract Euler angles (pitch, yaw, roll) from rotation matrix
+    // Using the Tait-Bryan angles (Y-X-Z, yaw-pitch-roll)
+    let pitch = Math.asin(-zN.y);
+    let yaw = Math.atan2(zN.x, zN.z);
+    let roll = Math.atan2(xN.y, yN.y);
+    // Convert to degrees
+    pitch = pitch * 180 / Math.PI + 30;
+    yaw = yaw * 180 / Math.PI;
+    roll = roll * 180 / Math.PI;
+
+    // Draw a line that starts at the nose and extends in the direction of the face (using zN, the face normal)
+    // Nose position in canvas coordinates (unmirrored if needed)
+    const noseCanvasX = nx; // or canvas.width - nx if unmirrored
+    const noseCanvasY = ny;
+
+    // Use zN (face normal) for direction
+    const lineLength = 200; // pixels
+    const yBias = 0.4; // Try values between 0.1 and 0.3 for your setup
+    const endX = noseCanvasX + zN.x * lineLength;
+    const endY = noseCanvasY + (zN.y - yBias) * lineLength;
+
+    // Smooth the endpoint using exponential moving average
+    const alpha = 0.2; // Smoothing factor (0.1-0.3 is typical)
+    if (prevLineEndX === null || prevLineEndY === null) {
+      prevLineEndX = endX;
+      prevLineEndY = endY;
+    }
+    const smoothedEndX = alpha * endX + (1 - alpha) * prevLineEndX;
+    const smoothedEndY = alpha * endY + (1 - alpha) * prevLineEndY;
+    prevLineEndX = smoothedEndX;
+    prevLineEndY = smoothedEndY;
+
+    ctx.save();
+    ctx.strokeStyle = "#00ccff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(noseCanvasX, noseCanvasY);
+    ctx.lineTo(smoothedEndX, smoothedEndY);
+    ctx.stroke();
+    ctx.restore();
+
 
     // --- Face distance detection (not too close, not too far) ---
     const eyeDist = Math.hypot(lx - rx, ly - ry);
@@ -164,7 +248,8 @@ Promise.all([
     updateInfoTable({
       lx, ly, rx, ry, eyeDist, isFaceClose, lookingStraight,
       isXCentered, isYCentered, isHeadTiltedDown, isHeadTiltedDownRight, isHeadTiltedDownLeft, cameraLook,
-      canvasWidth: canvas.width, faceCenterX, nx, aimError
+      canvasWidth: canvas.width, nx, ny, aimError,
+      pitch, yaw, roll
     });
 
     // --- Draw all faces/landmarks ---
