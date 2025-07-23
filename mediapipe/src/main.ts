@@ -3,6 +3,7 @@ import { setupCamera } from './camera.js';
 import { drawHeadOvalGuide, drawFaceMesh, drawCanvasMessage, drawArrow } from './drawing.js';
 import { updateInfoTable, removeInfoTable } from './ui.js';
 import { setupFaceMesh } from './faceMesh.js';
+import { computePoseAngles, computeNoseLine, getSmoothedNoseLineEnd, getTargetsAndHits } from './pose.js';
 
 let prevLineEndX: number | null = null;
 let prevLineEndY: number | null = null;
@@ -92,75 +93,12 @@ Promise.all([
     const nx = nose.x * canvas.width, ny = nose.y * canvas.height;
 
     // 3D coordinates for pose estimation
-    const leftEye3D = leftEye;
-    const rightEye3D = rightEye;
-    const nose3D = nose;
-    const mouth3D = mouth;
-
-    // --- Face rotation estimation (pitch, yaw, roll) ---
-    // Define face axes using 3D points
-    // X axis: from right eye to left eye
-    const eyesCenter = {
-      x: leftEye3D.x - rightEye3D.x,
-      y: leftEye3D.y - rightEye3D.y,
-      z: leftEye3D.z - rightEye3D.z
-    };
-    // Y axis: from nose to mouth
-    const noseMounthCenter = {
-      x: mouth3D.x - nose3D.x,
-      y: mouth3D.y - nose3D.y,
-      z: mouth3D.z - nose3D.z
-    };
-    // Z axis: cross product of X and Y
-    const crossProduct = {
-      x: eyesCenter.y * noseMounthCenter.z - eyesCenter.z * noseMounthCenter.y,
-      y: eyesCenter.z * noseMounthCenter.x - eyesCenter.x * noseMounthCenter.z,
-      z: eyesCenter.x * noseMounthCenter.y - eyesCenter.y * noseMounthCenter.x
-    };
-    // Normalize axes
-    function normalize(v: any) {
-      const len = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-      return { x: v.x / len, y: v.y / len, z: v.z / len };
-    }
-    const xN = normalize(eyesCenter);
-    const yN = normalize(noseMounthCenter);
-    const zN = normalize(crossProduct);
-
-    // Rotation matrix (columns are axes)
-    // [ xN.x yN.x zN.x ]
-    // [ xN.y yN.y zN.y ]
-    // [ xN.z yN.z zN.z ]
-    // Extract Euler angles (pitch, yaw, roll) from rotation matrix
-    // Using the Tait-Bryan angles (Y-X-Z, yaw-pitch-roll)
-    let pitch = Math.asin(-zN.y);
-    let yaw = Math.atan2(zN.x, zN.z);
-    let roll = Math.atan2(xN.y, yN.y);
-    // Convert to degrees
-    pitch = pitch * 180 / Math.PI + 30;
-    yaw = yaw * 180 / Math.PI;
-    roll = roll * 180 / Math.PI;
-
-    // Draw a line that starts at the nose and extends in the direction of the face (using zN, the face normal)
-    // Nose position in canvas coordinates (unmirrored if needed)
-    const noseCanvasX = nx; // or canvas.width - nx if unmirrored
-    const noseCanvasY = ny;
-
-    // Use zN (face normal) for direction
+    const { pitch, yaw, roll, zN } = computePoseAngles(leftEye, rightEye, nose, mouth);
     const noseLineLength = 100; // pixels
-    const yBias = 0.45; // Try values between 0.1 and 0.3 for your setup
-    const endX = noseCanvasX + zN.x * noseLineLength;
-    const endY = noseCanvasY + (zN.y - yBias) * noseLineLength;
+    const yBias = 0.45;
+    const { noseCanvasX, noseCanvasY, endX, endY } = computeNoseLine(nose, zN, canvas.width, canvas.height, yBias, noseLineLength);
 
-    // Smooth the endpoint using exponential moving average
-    const alpha = 0.2; // Smoothing factor (0.1-0.3 is typical)
-    if (prevLineEndX === null || prevLineEndY === null) {
-      prevLineEndX = endX;
-      prevLineEndY = endY;
-    }
-    const smoothedEndX = alpha * endX + (1 - alpha) * prevLineEndX;
-    const smoothedEndY = alpha * endY + (1 - alpha) * prevLineEndY;
-    prevLineEndX = smoothedEndX;
-    prevLineEndY = smoothedEndY;
+    const { smoothedEndX, smoothedEndY } = getSmoothedNoseLineEnd(endX, endY, 0.2);
 
     ctx.save();
     ctx.strokeStyle = "#00ccff";
@@ -259,19 +197,9 @@ Promise.all([
 
     // --- Draw targets if isFramed ---
     if (isFramed) {
-      const targetRadius = 10;
-      const margin = 60;
-      const bottomY = canvas.height - 10;
-      // Target positions
-      const targets = [
-        { x: canvas.width / 2, y: bottomY }, // bottom center
-        { x: canvas.width - margin, y: bottomY }, // bottom right
-        { x: margin, y: bottomY } // bottom left
-      ];
+      const targets = getTargetsAndHits(canvas.width, canvas.height, smoothedEndX, smoothedEndY, { radius: 10, margin: 60 });
       for (const t of targets) {
-        const dist = Math.hypot(smoothedEndX - t.x, smoothedEndY - t.y);
-        const hit = dist < targetRadius;
-        drawTarget(ctx, t.x, t.y, targetRadius, hit);
+        drawTarget(ctx, t.x, t.y, t.radius, t.hit);
       }
     }
 
