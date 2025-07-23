@@ -90,3 +90,22 @@ export function getTargetsAndHits(canvasWidth: number, canvasHeight: number, poi
   ];
   return targets.map(t => ({ ...t, hit: Math.hypot(pointX - t.x, pointY - t.y) < radius }));
 } 
+
+// Add this helper function near the top (after imports):
+export function drawTarget(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, hit: boolean) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = hit ? '#00cc44' : '#8888ff';
+    ctx.globalAlpha = hit ? 1.0 : 0.7;
+    ctx.shadowColor = hit ? '#00ff88' : 'transparent';
+    ctx.shadowBlur = hit ? 16 : 0;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.5, 0, 2 * Math.PI);
+    ctx.fillStyle = hit ? '#00ff88' : '#ccccff';
+    ctx.globalAlpha = hit ? 0.5 : 0.2;
+    ctx.fill();
+    ctx.restore();
+}
