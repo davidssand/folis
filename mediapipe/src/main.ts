@@ -36,6 +36,25 @@ Promise.all([
   const mouthIdx = 13;
   const noseIdx = 1;
 
+  // Add this helper function near the top (after imports):
+  function drawTarget(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, hit: boolean) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = hit ? '#00cc44' : '#8888ff';
+    ctx.globalAlpha = hit ? 1.0 : 0.7;
+    ctx.shadowColor = hit ? '#00ff88' : 'transparent';
+    ctx.shadowBlur = hit ? 16 : 0;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.5, 0, 2 * Math.PI);
+    ctx.fillStyle = hit ? '#00ff88' : '#ccccff';
+    ctx.globalAlpha = hit ? 0.5 : 0.2;
+    ctx.fill();
+    ctx.restore();
+  }
+
   // Main detection and drawing logic
   function onResults(results: any) {
     ctx.save();
@@ -127,10 +146,10 @@ Promise.all([
     const noseCanvasY = ny;
 
     // Use zN (face normal) for direction
-    const lineLength = 100; // pixels
+    const noseLineLength = 100; // pixels
     const yBias = 0.45; // Try values between 0.1 and 0.3 for your setup
-    const endX = noseCanvasX + zN.x * lineLength;
-    const endY = noseCanvasY + (zN.y - yBias) * lineLength;
+    const endX = noseCanvasX + zN.x * noseLineLength;
+    const endY = noseCanvasY + (zN.y - yBias) * noseLineLength;
 
     // Smooth the endpoint using exponential moving average
     const alpha = 0.2; // Smoothing factor (0.1-0.3 is typical)
@@ -152,7 +171,6 @@ Promise.all([
     ctx.stroke();
     ctx.restore();
 
-
     // --- Face distance detection (not too close, not too far) ---
     const eyeDist = Math.hypot(lx - rx, ly - ry);
     const minEyeDist = 0.12 * canvas.width;
@@ -171,7 +189,6 @@ Promise.all([
       alertMsg = 'Closer';
       alertColor = '#ff3333';
     }
-
 
     if (alertMsg) {
         ctx.save();
@@ -204,7 +221,6 @@ Promise.all([
     const centerDistX = Math.abs(faceCenterX - canvasCenterX);
     const centerDistY = Math.abs(faceCenterY - canvasCenterY);
 
-    // --- Show or clear alert ---
     // Draw animated arrows instead of text alerts
     // Animation: arrows pulse in length
     const t = Date.now() / 500;
@@ -216,30 +232,47 @@ Promise.all([
     if (centerDistX < (0.10 * canvas.width)) {
       isXFramed = true;
     } else {
-        if (faceCenterX > canvasCenterX) {
-            // Too far right, move left
-            drawArrow(ctx, canvas.width - 60, canvas.height / 2, -arrowLength, 0, arrowColor, 'Left');
-        } else {
-            // Too far left, move right
-            drawArrow(ctx, 60, canvas.height / 2, arrowLength, 0, arrowColor, 'Right');
-        }
+      if (faceCenterX > canvasCenterX) {
+        // Too far right, move left
+        drawArrow(ctx, canvas.width - 60, canvas.height / 2, -arrowLength, 0, arrowColor, 'Left');
+      } else {
+        // Too far left, move right
+        drawArrow(ctx, 60, canvas.height / 2, arrowLength, 0, arrowColor, 'Right');
+      }
     }
     let isYFramed = false;
     if (centerDistY < (0.10 * canvas.height)) {
       isYFramed = true;
     } else {
-        if (faceCenterY > canvasCenterY) {
-            // Too low, move up
-            drawArrow(ctx, canvas.width / 2, canvas.height - 50, 0, -arrowLength, arrowColor, 'Up');
-        } else {
-            // Too high, move down
-            drawArrow(ctx, canvas.width / 2, 0, 0, arrowLength, arrowColor, 'Down');
-        }
+      if (faceCenterY > canvasCenterY) {
+        // Too low, move up
+        drawArrow(ctx, canvas.width / 2, canvas.height - 50, 0, -arrowLength, arrowColor, 'Up');
+      } else {
+        // Too high, move down
+        drawArrow(ctx, canvas.width / 2, 0, 0, arrowLength, arrowColor, 'Down');
+      }
     }
-
     let isFramed = false;
     if (isZFramed && isXFramed && isYFramed) {
-        isFramed = true;
+      isFramed = true;
+    }
+
+    // --- Draw targets if isFramed ---
+    if (isFramed) {
+      const targetRadius = 10;
+      const margin = 60;
+      const bottomY = canvas.height - 10;
+      // Target positions
+      const targets = [
+        { x: canvas.width / 2, y: bottomY }, // bottom center
+        { x: canvas.width - margin, y: bottomY }, // bottom right
+        { x: margin, y: bottomY } // bottom left
+      ];
+      for (const t of targets) {
+        const dist = Math.hypot(smoothedEndX - t.x, smoothedEndY - t.y);
+        const hit = dist < targetRadius;
+        drawTarget(ctx, t.x, t.y, targetRadius, hit);
+      }
     }
 
     updateInfoTable({
