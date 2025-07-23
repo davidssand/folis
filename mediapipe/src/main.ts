@@ -1,11 +1,12 @@
 // Minimal Mediapipe Face Landmarks app in TypeScript
 import { setupCamera } from './camera.js';
-import { drawHeadOvalGuide, drawFaceMesh, drawCanvasMessage } from './drawing.js';
-import { showAlert, clearAlert, updateInfoTable, removeInfoTable } from './ui.js';
+import { drawHeadOvalGuide, drawFaceMesh, drawCanvasMessage, drawArrow } from './drawing.js';
+import { updateInfoTable, removeInfoTable } from './ui.js';
 import { setupFaceMesh } from './faceMesh.js';
 
 let prevLineEndX: number | null = null;
 let prevLineEndY: number | null = null;
+
 
 // Load drawing utils and face mesh scripts
 const drawingUtilsScript = document.createElement('script');
@@ -47,7 +48,6 @@ Promise.all([
     // If no face, clear info table and alert
     if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
       removeInfoTable();
-      clearAlert();
       ctx.restore();
       return;
     }
@@ -62,7 +62,6 @@ Promise.all([
     // If any key point is missing, skip
     if (!leftEye || !rightEye || !mouth || !nose) {
       removeInfoTable();
-      clearAlert();
       ctx.restore();
       return;
     }
@@ -128,7 +127,7 @@ Promise.all([
     const noseCanvasY = ny;
 
     // Use zN (face normal) for direction
-    const lineLength = 1000; // pixels
+    const lineLength = 100; // pixels
     const yBias = 0.45; // Try values between 0.1 and 0.3 for your setup
     const endX = noseCanvasX + zN.x * lineLength;
     const endY = noseCanvasY + (zN.y - yBias) * lineLength;
@@ -156,7 +155,7 @@ Promise.all([
 
     // --- Face distance detection (not too close, not too far) ---
     const eyeDist = Math.hypot(lx - rx, ly - ry);
-    const minEyeDist = 0.14 * canvas.width;
+    const minEyeDist = 0.12 * canvas.width;
     const maxEyeDist = 0.19 * canvas.width;
     let isZFramed = false;
     let alertMsg = '';
@@ -165,12 +164,24 @@ Promise.all([
         if (eyeDist < maxEyeDist) {
             isZFramed = true;
         } else {
-            alertMsg = 'Move farther from the camera';
+            alertMsg = 'Farther';
             alertColor = '#ff3333';
         }
     } else {
-      alertMsg = 'Move closer to the camera';
+      alertMsg = 'Closer';
       alertColor = '#ff3333';
+    }
+
+
+    if (alertMsg) {
+        ctx.save();
+        ctx.font = 'bold 38px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = '#bba000';
+        ctx.fillText(alertMsg, canvas.width / 2, canvas.height / 3);
+        ctx.restore();
     }
 
     // --- Face centered detection (both in x and y) using average of all landmarks ---
@@ -192,13 +203,38 @@ Promise.all([
     const canvasCenterY = canvas.height / 1.5;
     const centerDistX = Math.abs(faceCenterX - canvasCenterX);
     const centerDistY = Math.abs(faceCenterY - canvasCenterY);
+
+    // --- Show or clear alert ---
+    // Draw animated arrows instead of text alerts
+    // Animation: arrows pulse in length
+    const t = Date.now() / 500;
+    const pulse = 1 + 0.2 * Math.sin(t);
+    const arrowLength = 32 * pulse;
+    const arrowColor = '#ff3333';
+
     let isXFramed = false;
     if (centerDistX < (0.10 * canvas.width)) {
       isXFramed = true;
+    } else {
+        if (faceCenterX > canvasCenterX) {
+            // Too far right, move left
+            drawArrow(ctx, canvas.width - 60, canvas.height / 2, -arrowLength, 0, arrowColor, 'Left');
+        } else {
+            // Too far left, move right
+            drawArrow(ctx, 60, canvas.height / 2, arrowLength, 0, arrowColor, 'Right');
+        }
     }
     let isYFramed = false;
     if (centerDistY < (0.10 * canvas.height)) {
       isYFramed = true;
+    } else {
+        if (faceCenterY > canvasCenterY) {
+            // Too low, move up
+            drawArrow(ctx, canvas.width / 2, canvas.height - 50, 0, -arrowLength, arrowColor, 'Up');
+        } else {
+            // Too high, move down
+            drawArrow(ctx, canvas.width / 2, 0, 0, arrowLength, arrowColor, 'Down');
+        }
     }
 
     let isFramed = false;
@@ -206,15 +242,6 @@ Promise.all([
         isFramed = true;
     }
 
-
-    // --- Show or clear alert ---
-    if (alertMsg) {
-      showAlert(alertMsg, alertColor);
-    } else {
-      clearAlert();
-    }
-
-    // --- Info Table ---
     updateInfoTable({
       lx, ly, rx, ry, eyeDist, 
       isXFramed, isYFramed, isZFramed, isFramed,

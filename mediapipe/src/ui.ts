@@ -1,35 +1,3 @@
-export function showAlert(message: string, color: string) {
-  let alertDiv = document.getElementById('face-alert-div') as HTMLDivElement | null;
-  if (!alertDiv) {
-    alertDiv = document.createElement('div');
-    alertDiv.id = 'face-alert-div';
-    alertDiv.style.position = 'fixed';
-    alertDiv.style.top = '30px';
-    alertDiv.style.left = '50%';
-    alertDiv.style.transform = 'translateX(-50%)';
-    alertDiv.style.background = '#fff';
-    alertDiv.style.border = '2px solid ' + color;
-    alertDiv.style.borderRadius = '10px';
-    alertDiv.style.padding = '16px 32px';
-    alertDiv.style.fontSize = '1.3rem';
-    alertDiv.style.fontWeight = 'bold';
-    alertDiv.style.color = color;
-    alertDiv.style.zIndex = '2000';
-    alertDiv.style.boxShadow = '0 2px 12px rgba(0,0,0,0.12)';
-    document.body.appendChild(alertDiv);
-  }
-  if (alertDiv.textContent !== message) {
-    alertDiv.textContent = message;
-    alertDiv.style.borderColor = color;
-    alertDiv.style.color = color;
-  }
-}
-
-export function clearAlert() {
-  const alertDiv = document.getElementById('face-alert-div');
-  if (alertDiv) alertDiv.remove();
-}
-
 export function updateInfoTable(d: Record<string, any>) {
   let infoTable = document.getElementById('face-info-table') as HTMLTableElement | null;
   if (!infoTable) {
