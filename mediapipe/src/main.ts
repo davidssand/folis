@@ -109,15 +109,39 @@ Promise.all([
     ctx.stroke();
     ctx.restore();
 
+    // --- Face centered detection (both in x and y) using average of all landmarks ---
+    // Compute average x and y of all face landmarks
+    let avgX = 0;
+    let avgY = 0;
+    let minX = Infinity, maxX = -Infinity;
+    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+      const landmarks = results.multiFaceLandmarks[0];
+      for (const lm of landmarks) {
+        const x = lm.x * canvas.width;
+        avgX += x;
+        avgY += lm.y * canvas.height;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+      }
+      avgX /= landmarks.length;
+      avgY /= landmarks.length;
+    }
+    const faceCenterX = avgX;
+    const faceCenterY = avgY;
+    const canvasCenterX = canvas.width / 2;
+    const canvasCenterY = canvas.height / 1.5;
+    const centerDistX = Math.abs(faceCenterX - canvasCenterX);
+    const centerDistY = Math.abs(faceCenterY - canvasCenterY);
+    const extremeDistX = maxX - minX;
+
     // --- Face distance detection (not too close, not too far) ---
-    const eyeDist = Math.hypot(lx - rx, ly - ry);
-    const minEyeDist = 0.12 * canvas.width;
-    const maxEyeDist = 0.19 * canvas.width;
+    const minDist = 0.25 * canvas.width;
+    const maxDist = 0.35 * canvas.width;
     let isZFramed = false;
     let alertMsg = '';
     let alertColor = '';
-    if (eyeDist > minEyeDist) {
-        if (eyeDist < maxEyeDist) {
+    if (extremeDistX > minDist) {
+        if (extremeDistX < maxDist) {
             isZFramed = true;
         } else {
             alertMsg = 'Farther';
@@ -138,26 +162,6 @@ Promise.all([
         ctx.fillText(alertMsg, canvas.width / 2, canvas.height / 3);
         ctx.restore();
     }
-
-    // --- Face centered detection (both in x and y) using average of all landmarks ---
-    // Compute average x and y of all face landmarks
-    let avgX = 0;
-    let avgY = 0;
-    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-      const landmarks = results.multiFaceLandmarks[0];
-      for (const lm of landmarks) {
-        avgX += lm.x * canvas.width;
-        avgY += lm.y * canvas.height;
-      }
-      avgX /= landmarks.length;
-      avgY /= landmarks.length;
-    }
-    const faceCenterX = avgX;
-    const faceCenterY = avgY;
-    const canvasCenterX = canvas.width / 2;
-    const canvasCenterY = canvas.height / 1.5;
-    const centerDistX = Math.abs(faceCenterX - canvasCenterX);
-    const centerDistY = Math.abs(faceCenterY - canvasCenterY);
 
     // Draw animated arrows instead of text alerts
     // Animation: arrows pulse in length
@@ -204,7 +208,7 @@ Promise.all([
     }
 
     updateInfoTable({
-      lx, ly, rx, ry, eyeDist, 
+      lx, ly, rx, ry, centerDistX, extremeDistX, minDist, maxDist,
       isXFramed, isYFramed, isZFramed, isFramed,
       canvasWidth: canvas.width, nx, ny, 
       pitch, yaw, roll
