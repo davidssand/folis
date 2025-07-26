@@ -63,6 +63,9 @@ export interface WorkflowState {
   completedSteps: boolean[];
   stepNames: string[];
   isComplete: boolean;
+  holdStartTime: number | null;
+  holdDuration: number;
+  requiredHoldTime: number;
 }
 
 export const WORKFLOW_STEPS = {
@@ -76,23 +79,45 @@ export function createWorkflowState(): WorkflowState {
     currentStep: WORKFLOW_STEPS.MIDDLE,
     completedSteps: [false, false, false],
     stepNames: ['Acerte o alvo abaixo', 'Acerte o alvo no canto esquerdo', 'Acerte o alvo no canto direito'],
-    isComplete: false
+    isComplete: false,
+    holdStartTime: null,
+    holdDuration: 0,
+    requiredHoldTime: 1000 // 1 second in milliseconds
   };
 }
 
 export function updateWorkflowState(workflowState: WorkflowState, targets: any[]): WorkflowState {
   const newState = { ...workflowState };
+  const currentTime = Date.now();
   
   // Check if current target is hit
-  if (targets[newState.currentStep]?.hit && !newState.completedSteps[newState.currentStep]) {
-    newState.completedSteps[newState.currentStep] = true;
-    
-    // Move to next step
-    if (newState.currentStep < newState.stepNames.length - 1) {
-      newState.currentStep++;
-    } else {
-      newState.isComplete = true;
+  if (targets[newState.currentStep]?.hit) {
+    // Start or continue holding
+    if (newState.holdStartTime === null) {
+      newState.holdStartTime = currentTime;
     }
+    
+    // Calculate hold duration
+    newState.holdDuration = currentTime - newState.holdStartTime;
+    
+    // Check if held long enough
+    if (newState.holdDuration >= newState.requiredHoldTime && !newState.completedSteps[newState.currentStep]) {
+      newState.completedSteps[newState.currentStep] = true;
+      
+      // Move to next step
+      if (newState.currentStep < newState.stepNames.length - 1) {
+        newState.currentStep++;
+        // Reset hold state for next step
+        newState.holdStartTime = null;
+        newState.holdDuration = 0;
+      } else {
+        newState.isComplete = true;
+      }
+    }
+  } else {
+    // Not hitting target, reset hold state
+    newState.holdStartTime = null;
+    newState.holdDuration = 0;
   }
   
   return newState;
@@ -239,7 +264,8 @@ export function drawCurrentWorkflowTarget(ctx: CanvasRenderingContext2D, targets
   // Draw only the current target
   const currentTarget = targets[workflowState.currentStep];
   if (currentTarget) {
-    drawTarget(ctx, currentTarget.x, currentTarget.y, currentTarget.radius, currentTarget.hit);
+    const isHolding = workflowState.holdStartTime !== null && workflowState.holdDuration > 0;
+    drawTarget(ctx, currentTarget.x, currentTarget.y, currentTarget.radius, currentTarget.hit, isHolding, workflowState.holdDuration, workflowState.requiredHoldTime);
   }
   
   // Draw completed targets with a different style
@@ -305,7 +331,7 @@ export function drawCompletedTarget(ctx: CanvasRenderingContext2D, targetX: numb
 }
 
   // Enhanced target drawing for mobile
-  export function drawTarget(ctx: CanvasRenderingContext2D, targetX: number, targetY: number, targetRadius: number, isHit: boolean) {
+  export function drawTarget(ctx: CanvasRenderingContext2D, targetX: number, targetY: number, targetRadius: number, isHit: boolean, isHolding: boolean = false, holdDuration: number = 0, requiredHoldTime: number = 0) {
       ctx.save();
       
       // Animation timing
@@ -371,6 +397,40 @@ export function drawCompletedTarget(ctx: CanvasRenderingContext2D, targetX: numb
         ctx.lineTo(targetX, targetY + sparkleLength);
         ctx.stroke();
       }
+
+        // Draw loading animation for holding
+        if (isHolding) {
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 0.8;
+          ctx.strokeStyle = '#00ff88'; // Green color for loading
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]); // Dashed line for loading
+          ctx.beginPath();
+          ctx.arc(targetX, targetY, animatedRadius, 0, 2 * Math.PI);
+          ctx.stroke();
+          ctx.setLineDash([]); // Reset line dash
+          
+          // Draw circular progress indicator
+          const progress = Math.min(holdDuration / requiredHoldTime, 1);
+          const progressRadius = animatedRadius + 8;
+          const startAngle = -Math.PI / 2; // Start from top
+          const endAngle = startAngle + (2 * Math.PI * progress);
+          
+          ctx.globalAlpha = 0.9;
+          ctx.strokeStyle = '#00ff88';
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.arc(targetX, targetY, progressRadius, startAngle, endAngle);
+          ctx.stroke();
+          
+          // Draw background circle for progress
+          ctx.globalAlpha = 0.3;
+          ctx.strokeStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(targetX, targetY, progressRadius, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
       
       ctx.restore();
   }

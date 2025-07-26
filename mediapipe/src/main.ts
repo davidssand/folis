@@ -216,7 +216,14 @@ Promise.all([
       if (!framingAlertShown) {
         if (!workflowState.isComplete) {
           const currentStepName = workflowState.stepNames[workflowState.currentStep];
-          showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName}`, '#00aaff');
+          
+          // Show hold progress if currently holding
+          if (workflowState.holdStartTime !== null && workflowState.holdDuration > 0) {
+            const progressPercent = Math.round((workflowState.holdDuration / workflowState.requiredHoldTime) * 100);
+            showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName} (${progressPercent}%)`, '#00aaff');
+          } else {
+            showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName}`, '#00aaff');
+          }
         } else {
           showAlert('Workflow Complete! All targets hit!', '#00ff88');
         }
