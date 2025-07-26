@@ -210,15 +210,13 @@ Promise.all([
     if (isTooLeft || isTooRight) {
       const arrowPositionX = isTooRight ? canvas.width - 60 : 60;
       const arrowDirectionX = isTooRight ? -arrowLength : arrowLength;
-      const arrowLabel = isTooRight ? '←' : '→';
-      drawArrow(ctx, arrowPositionX, canvas.height / 2, arrowDirectionX, 0, arrowColor, arrowLabel);
+      drawArrow(ctx, arrowPositionX, canvas.height / 2, arrowDirectionX, 0, arrowColor);
     }
     
     if (isTooLow || isTooHigh) {
       const arrowPositionY = isTooLow ? canvas.height * 0.8 : canvas.height * 0.2;
       const arrowDirectionY = isTooLow ? -arrowLength : arrowLength;
-      const arrowLabel = isTooLow ? '↑' : '↓';
-      drawArrow(ctx, canvas.width / 2, arrowPositionY, 0, arrowDirectionY, arrowColor, arrowLabel);
+      drawArrow(ctx, canvas.width / 2, arrowPositionY, 0, arrowDirectionY, arrowColor);
     }
 
     // Always calculate targets for hit detection, regardless of framing

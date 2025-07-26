@@ -46,8 +46,8 @@ const DRAWING_CONFIG = {
 
 // Arrow animation configuration
 export const ARROW_CONFIG = {
-  maxLength: 50,
-  lengthRatio: 0.25,
+  maxLength: 100,
+  lengthRatio: 0.5,
   pulseAmplitude: 0.2
 };
 
@@ -182,49 +182,89 @@ export function drawFaceMesh(
   ctx.restore();
 }
 
-export function drawArrow(ctx: CanvasRenderingContext2D, startX: number, startY: number, deltaX: number, deltaY: number, color: string, label?: string) {
+export function drawArrow(ctx: CanvasRenderingContext2D, startX: number, startY: number, deltaX: number, deltaY: number, color: string) {
   ctx.save();
   
-  // Enhanced shadow for better visibility on mobile
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = DRAWING_CONFIG.ARROW.shadowBlur;
-  ctx.shadowOffsetX = DRAWING_CONFIG.ARROW.shadowOffset;
-  ctx.shadowOffsetY = DRAWING_CONFIG.ARROW.shadowOffset;
-
   const arrowAngle = Math.atan2(deltaY, deltaX);
-  const arrowEndX = startX + deltaX;
-  const arrowEndY = startY + deltaY;
-
-  // Draw label if provided (using emoji arrows for mobile)
-  if (label) {
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.font = DRAWING_CONFIG.ARROW.font;
-    ctx.fillStyle = color;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    // Place label near the arrowhead
-    const labelX = arrowEndX + DRAWING_CONFIG.ARROW.labelOffset * Math.cos(arrowAngle);
-    const labelY = arrowEndY + DRAWING_CONFIG.ARROW.labelOffset * Math.sin(arrowAngle);
-    
-    // Add background for better readability
-    const textMetrics = ctx.measureText(label);
-    const padding = DRAWING_CONFIG.ARROW.padding;
-    ctx.fillStyle = `rgba(0,0,0,${DRAWING_CONFIG.ARROW.backgroundAlpha})`;
-    ctx.fillRect(
-      labelX - textMetrics.width/2 - padding,
-      labelY - 12 - padding,
-      textMetrics.width + padding * 2,
-      24 + padding * 2
-    );
-    
-    ctx.fillStyle = color;
-    ctx.fillText(label, labelX, labelY);
-  }
+  const arrowLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  const headLength = Math.min(arrowLength * 0.25, 20);
   
+  // Calculate shaft end (before arrowhead)
+  const shaftEndX = startX + deltaX - (headLength * Math.cos(arrowAngle));
+  const shaftEndY = startY + deltaY - (headLength * Math.sin(arrowAngle));
+  
+  // Enhanced shadow for better visibility
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+
+  // Create gradient for the arrow shaft
+  const gradient = ctx.createLinearGradient(startX, startY, shaftEndX, shaftEndY);
+  gradient.addColorStop(0, color);
+  gradient.addColorStop(1, '#ffffff');
+
+  // Draw the main arrow shaft with gradient (stopping before arrowhead)
+  ctx.strokeStyle = gradient;
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(shaftEndX, shaftEndY);
+  ctx.stroke();
+
+  // Draw arrowhead with separate gradient
+  const headGradient = ctx.createRadialGradient(
+    startX + deltaX, startY + deltaY, 0,
+    startX + deltaX, startY + deltaY, headLength
+  );
+  headGradient.addColorStop(0, color);
+  headGradient.addColorStop(1, '#ff8c69');
+  
+  const headAngle = Math.PI / 6; // 30 degrees
+  
+  ctx.fillStyle = headGradient;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.moveTo(startX + deltaX, startY + deltaY);
+  ctx.lineTo(
+    shaftEndX - headLength * 0.8 * Math.cos(arrowAngle - headAngle),
+    shaftEndY - headLength * 0.8 * Math.sin(arrowAngle - headAngle)
+  );
+  ctx.lineTo(
+    shaftEndX - headLength * 0.8 * Math.cos(arrowAngle + headAngle),
+    shaftEndY - headLength * 0.8 * Math.sin(arrowAngle + headAngle)
+  );
+  ctx.closePath();
+  ctx.fill();
+
+  // Add glow effect to shaft
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 20;
+  ctx.globalAlpha = 0.3;
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(shaftEndX, shaftEndY);
+  ctx.stroke();
+
+  // Add subtle inner glow to arrowhead
+  ctx.globalAlpha = 0.6;
+  ctx.shadowBlur = 15;
+  ctx.beginPath();
+  ctx.moveTo(startX + deltaX, startY + deltaY);
+  ctx.lineTo(
+    shaftEndX - headLength * 0.6 * Math.cos(arrowAngle - headAngle),
+    shaftEndY - headLength * 0.6 * Math.sin(arrowAngle - headAngle)
+  );
+  ctx.lineTo(
+    shaftEndX - headLength * 0.6 * Math.cos(arrowAngle + headAngle),
+    shaftEndY - headLength * 0.6 * Math.sin(arrowAngle + headAngle)
+  );
+  ctx.closePath();
+  ctx.fill();
+
   ctx.restore();
 }
 
