@@ -212,8 +212,6 @@ Promise.all([
       // When framed: show current target and completed targets
       drawCurrentWorkflowTarget(ctx, targets, workflowState);
       
-      // Show workflow progress only if no framing alert is shown
-      if (!framingAlertShown) {
         if (!workflowState.isComplete) {
           const currentStepName = workflowState.stepNames[workflowState.currentStep];
           
@@ -227,7 +225,6 @@ Promise.all([
         } else {
           showAlert('Workflow Complete! All targets hit!', '#00ff88');
         }
-      }
     } else if (workflowState.completedSteps.some(step => step)) {
       // When not framed but has completed targets: show only completed targets
       drawCompletedTargetsOnly(ctx, targets, workflowState);
