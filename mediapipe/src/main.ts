@@ -95,15 +95,12 @@ Promise.all([
     if (!isZFramed) {
       const message = extremeDistX <= minDist ? 'Aproxime-se' : 'Afaste-se';
       showAlert(message, '#ff6b35');
-      return true; // Indicate that a framing alert was shown
     } else if (isTooLeft || isTooRight || isTooHigh || isTooLow) {
-      // Show positioning alerts (these are handled by the arrow drawing logic)
-      return true; // Indicate that a framing alert was shown
+      // Hide any existing alerts when positioning arrows are shown
+      hideAlert();
     } else if (isZFramed && workflowState.isComplete) {
       hideAlert();
-      return false;
     }
-    return false; // No framing alert shown
   }
 
   // Main detection and drawing logic
@@ -175,7 +172,7 @@ Promise.all([
     updateStatusIndicator(isFramed);
 
     // Handle alerts - framing alerts take priority
-    const framingAlertShown = handleAlerts(framing);
+    handleAlerts(framing);
 
     // Draw animated arrows
     const currentTime = Date.now() / 500;
@@ -207,24 +204,25 @@ Promise.all([
     // Update workflow state based on target hits (even when not framed)
     workflowState = updateWorkflowState(workflowState, targets);
     
-    // Draw targets based on framing status
+        // Draw targets based on framing status
     if (isFramed) {
       // When framed: show current target and completed targets
       drawCurrentWorkflowTarget(ctx, targets, workflowState);
       
-        if (!workflowState.isComplete) {
-          const currentStepName = workflowState.stepNames[workflowState.currentStep];
-          
-          // Show hold progress if currently holding
-          if (workflowState.holdStartTime !== null && workflowState.holdDuration > 0) {
-            const progressPercent = Math.round((workflowState.holdDuration / workflowState.requiredHoldTime) * 100);
-            showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName} (${progressPercent}%)`, '#00aaff');
-          } else {
-            showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName}`, '#00aaff');
-          }
+      // Show workflow progress only when framed
+      if (!workflowState.isComplete) {
+        const currentStepName = workflowState.stepNames[workflowState.currentStep];
+        
+        // Show hold progress if currently holding
+        if (workflowState.holdStartTime !== null && workflowState.holdDuration > 0) {
+          const progressPercent = Math.round((workflowState.holdDuration / workflowState.requiredHoldTime) * 100);
+          showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName} (${progressPercent}%)`, '#00aaff');
         } else {
-          showAlert('Workflow Complete! All targets hit!', '#00ff88');
+          showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName}`, '#00aaff');
         }
+      } else {
+        showAlert('Workflow Complete! All targets hit!', '#00ff88');
+      }
     } else if (workflowState.completedSteps.some(step => step)) {
       // When not framed but has completed targets: show only completed targets
       drawCompletedTargetsOnly(ctx, targets, workflowState);
