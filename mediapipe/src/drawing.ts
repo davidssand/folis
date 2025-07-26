@@ -57,6 +57,47 @@ export const TARGET_CONFIG = {
   margin: 80
 };
 
+// Workflow state management
+export interface WorkflowState {
+  currentStep: number;
+  completedSteps: boolean[];
+  stepNames: string[];
+  isComplete: boolean;
+}
+
+export const WORKFLOW_STEPS = {
+  MIDDLE: 0,
+  LEFT: 1,
+  RIGHT: 2
+};
+
+export function createWorkflowState(): WorkflowState {
+  return {
+    currentStep: WORKFLOW_STEPS.MIDDLE,
+    completedSteps: [false, false, false],
+    stepNames: ['Look Forward', 'Look Left', 'Look Right'],
+    isComplete: false
+  };
+}
+
+export function updateWorkflowState(workflowState: WorkflowState, targets: any[]): WorkflowState {
+  const newState = { ...workflowState };
+  
+  // Check if current target is hit
+  if (targets[newState.currentStep]?.hit && !newState.completedSteps[newState.currentStep]) {
+    newState.completedSteps[newState.currentStep] = true;
+    
+    // Move to next step
+    if (newState.currentStep < newState.stepNames.length - 1) {
+      newState.currentStep++;
+    } else {
+      newState.isComplete = true;
+    }
+  }
+  
+  return newState;
+}
+
 export function drawHeadOvalGuide(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
   const centerX = canvas.width / 2;
   const centerY = canvas.height * DRAWING_CONFIG.OVAL.centerYRatio;
@@ -182,7 +223,74 @@ export function getTargetsAndHits(canvasWidth: number, canvasHeight: number, poi
       hit: Math.hypot(pointX - target.x, pointY - target.y) < targetRadius 
     }));
   }
+
+/**
+ * Draw only the current workflow target
+ */
+export function drawCurrentWorkflowTarget(ctx: CanvasRenderingContext2D, targets: any[], workflowState: WorkflowState) {
+  if (workflowState.isComplete) {
+    // Draw all targets as completed
+    targets.forEach((target, index) => {
+      drawTarget(ctx, target.x, target.y, target.radius, true);
+    });
+    return;
+  }
   
+  // Draw only the current target
+  const currentTarget = targets[workflowState.currentStep];
+  if (currentTarget) {
+    drawTarget(ctx, currentTarget.x, currentTarget.y, currentTarget.radius, currentTarget.hit);
+  }
+  
+  // Draw completed targets with a different style
+  workflowState.completedSteps.forEach((completed, index) => {
+    if (completed && index !== workflowState.currentStep) {
+      const target = targets[index];
+      drawCompletedTarget(ctx, target.x, target.y, target.radius);
+    }
+  });
+}
+
+/**
+ * Draw a completed target with a different visual style
+ */
+export function drawCompletedTarget(ctx: CanvasRenderingContext2D, targetX: number, targetY: number, targetRadius: number) {
+  ctx.save();
+  
+  // Draw completed target with green color and checkmark effect
+  const gradient = ctx.createRadialGradient(targetX, targetY, 0, targetX, targetY, targetRadius);
+  gradient.addColorStop(0, '#00ff88');
+  gradient.addColorStop(0.7, '#00cc44');
+  gradient.addColorStop(1, 'rgba(0, 204, 68, 0.3)');
+  
+  // Draw outer ring
+  ctx.beginPath();
+  ctx.arc(targetX, targetY, targetRadius, 0, 2 * Math.PI);
+  ctx.strokeStyle = gradient;
+  ctx.lineWidth = 3;
+  ctx.globalAlpha = 0.8;
+  ctx.stroke();
+  
+  // Draw inner circle
+  ctx.beginPath();
+  ctx.arc(targetX, targetY, targetRadius * 0.6, 0, 2 * Math.PI);
+  ctx.fillStyle = '#00ff88';
+  ctx.globalAlpha = 0.3;
+  ctx.fill();
+  
+  // Draw checkmark
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath();
+  ctx.moveTo(targetX - targetRadius * 0.3, targetY);
+  ctx.lineTo(targetX - targetRadius * 0.1, targetY + targetRadius * 0.2);
+  ctx.lineTo(targetX + targetRadius * 0.3, targetY - targetRadius * 0.2);
+  ctx.stroke();
+  
+  ctx.restore();
+}
+
   // Enhanced target drawing for mobile
   export function drawTarget(ctx: CanvasRenderingContext2D, targetX: number, targetY: number, targetRadius: number, isHit: boolean) {
       ctx.save();

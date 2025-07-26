@@ -135,6 +135,28 @@
       box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
     }
 
+    #reset-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 150;
+    }
+
+    #reset-button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
     #instructions {
       position: absolute;
       bottom: 2rem;
@@ -226,6 +248,7 @@
     </div>
     
     <div id="status-indicator"></div>
+    <button id="reset-button">Reset Workflow</button>
     
     <div id="camera-container">
       <div id="video-container">

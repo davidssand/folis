@@ -1,12 +1,25 @@
 // Minimal Mediapipe Face Landmarks app in TypeScript
 import { setupCamera } from './camera.js';
-import { drawHeadOvalGuide, drawFaceMesh, drawArrow, getTargetsAndHits, drawTarget, ARROW_CONFIG, TARGET_CONFIG } from './drawing.js';
+import { 
+  drawHeadOvalGuide, 
+  drawFaceMesh, 
+  drawArrow, 
+  getTargetsAndHits, 
+  drawTarget, 
+  ARROW_CONFIG, 
+  TARGET_CONFIG,
+  createWorkflowState,
+  updateWorkflowState,
+  drawCurrentWorkflowTarget,
+  WorkflowState
+} from './drawing.js';
 import { updateInfoTable, removeInfoTable } from './ui.js';
 import { setupFaceMesh } from './faceMesh.js';
 import { computePoseAngles, computeNoseLine, getSmoothedNoseLineEnd, LANDMARK_INDICES, NOSE_LINE_CONFIG } from './pose.js';
 import { computeFraming } from './framing.js';
 
 let isInitialized = false;
+let workflowState: WorkflowState = createWorkflowState();
 
 // Load drawing utils and face mesh scripts
 const drawingUtilsScript = document.createElement('script');
@@ -32,6 +45,7 @@ Promise.all([
   const alertContainer = document.getElementById('alert-container') as HTMLDivElement;
   const statusIndicator = document.getElementById('status-indicator') as HTMLDivElement;
   const loadingElement = document.getElementById('loading') as HTMLDivElement;
+  const resetButton = document.getElementById('reset-button') as HTMLButtonElement;
 
   // Hide loading screen and show camera
   function hideLoading() {
@@ -66,16 +80,26 @@ Promise.all([
     }
   }
 
+  // Reset workflow
+  function resetWorkflow() {
+    workflowState = createWorkflowState();
+    hideAlert();
+  }
+
   // Simplified alert logic
   function handleAlerts(framing: any) {
     const { isZFramed, extremeDistX, minDist, maxDist } = framing;
     
+    // Always prioritize framing alerts over workflow alerts
     if (!isZFramed) {
       const message = extremeDistX <= minDist ? 'Move Closer' : 'Move Back';
       showAlert(message, '#ff6b35');
-    } else {
+      return true; // Indicate that a framing alert was shown
+    } else if (isZFramed && workflowState.isComplete) {
       hideAlert();
+      return false;
     }
+    return false; // No framing alert shown
   }
 
   // Main detection and drawing logic
@@ -92,6 +116,8 @@ Promise.all([
       removeInfoTable();
       hideAlert();
       updateStatusIndicator(false);
+      // Reset workflow state when no face is detected
+      workflowState = createWorkflowState();
       ctx.restore();
       return;
     }
@@ -144,8 +170,8 @@ Promise.all([
     // Update status indicator
     updateStatusIndicator(isFramed);
 
-    // Handle alerts
-    handleAlerts(framing);
+    // Handle alerts - framing alerts take priority
+    const framingAlertShown = handleAlerts(framing);
 
     // Draw animated arrows
     const currentTime = Date.now() / 500;
@@ -174,8 +200,21 @@ Promise.all([
         canvas.width, canvas.height, smoothedEndX, smoothedEndY, 
         { radius: targetRadius, margin: TARGET_CONFIG.margin }
       );
-      for (const target of targets) {
-        drawTarget(ctx, target.x, target.y, target.radius, target.hit);
+      
+      // Update workflow state based on target hits
+      workflowState = updateWorkflowState(workflowState, targets);
+      
+      // Draw targets according to workflow
+      drawCurrentWorkflowTarget(ctx, targets, workflowState);
+      
+      // Show workflow progress only if no framing alert is shown
+      if (!framingAlertShown) {
+        if (!workflowState.isComplete) {
+          const currentStepName = workflowState.stepNames[workflowState.currentStep];
+          showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName}`, '#00aaff');
+        } else {
+          showAlert('Workflow Complete! All targets hit!', '#00ff88');
+        }
       }
     }
 
@@ -193,6 +232,11 @@ Promise.all([
       await setupCamera(video);
       video.play();
       await setupFaceMesh(video, canvas, ctx, onResults, FaceMesh, drawConnectors, drawLandmarks);
+      
+      // Add reset button event listener
+      if (resetButton) {
+        resetButton.addEventListener('click', resetWorkflow);
+      }
       
       // Hide loading screen after initialization
       if (!isInitialized) {
