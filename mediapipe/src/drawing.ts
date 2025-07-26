@@ -75,7 +75,7 @@ export function createWorkflowState(): WorkflowState {
   return {
     currentStep: WORKFLOW_STEPS.MIDDLE,
     completedSteps: [false, false, false],
-    stepNames: ['Look Forward', 'Look Left', 'Look Right'],
+    stepNames: ['Acerte o alvo abaixo', 'Acerte o alvo no canto esquerdo', 'Acerte o alvo no canto direito'],
     isComplete: false
   };
 }
@@ -245,6 +245,19 @@ export function drawCurrentWorkflowTarget(ctx: CanvasRenderingContext2D, targets
   // Draw completed targets with a different style
   workflowState.completedSteps.forEach((completed, index) => {
     if (completed && index !== workflowState.currentStep) {
+      const target = targets[index];
+      drawCompletedTarget(ctx, target.x, target.y, target.radius);
+    }
+  });
+}
+
+/**
+ * Draw only completed targets (for when user is not framed)
+ */
+export function drawCompletedTargetsOnly(ctx: CanvasRenderingContext2D, targets: any[], workflowState: WorkflowState) {
+  // Draw only completed targets with checkmark style
+  workflowState.completedSteps.forEach((completed, index) => {
+    if (completed) {
       const target = targets[index];
       drawCompletedTarget(ctx, target.x, target.y, target.radius);
     }

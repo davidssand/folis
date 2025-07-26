@@ -11,6 +11,7 @@ import {
   createWorkflowState,
   updateWorkflowState,
   drawCurrentWorkflowTarget,
+  drawCompletedTargetsOnly,
   WorkflowState
 } from './drawing.js';
 import { updateInfoTable, removeInfoTable } from './ui.js';
@@ -88,12 +89,15 @@ Promise.all([
 
   // Simplified alert logic
   function handleAlerts(framing: any) {
-    const { isZFramed, extremeDistX, minDist, maxDist } = framing;
+    const { isZFramed, extremeDistX, minDist, maxDist, isTooLeft, isTooRight, isTooHigh, isTooLow } = framing;
     
     // Always prioritize framing alerts over workflow alerts
     if (!isZFramed) {
-      const message = extremeDistX <= minDist ? 'Move Closer' : 'Move Back';
+      const message = extremeDistX <= minDist ? 'Aproxime-se' : 'Afaste-se';
       showAlert(message, '#ff6b35');
+      return true; // Indicate that a framing alert was shown
+    } else if (isTooLeft || isTooRight || isTooHigh || isTooLow) {
+      // Show positioning alerts (these are handled by the arrow drawing logic)
       return true; // Indicate that a framing alert was shown
     } else if (isZFramed && workflowState.isComplete) {
       hideAlert();
@@ -193,18 +197,19 @@ Promise.all([
       drawArrow(ctx, canvas.width / 2, arrowPositionY, 0, arrowDirectionY, arrowColor, arrowLabel);
     }
 
-    // Draw targets if framed
+    // Always calculate targets for hit detection, regardless of framing
+    const targetRadius = canvas.width * TARGET_CONFIG.radiusRatio;
+    const targets = getTargetsAndHits(
+      canvas.width, canvas.height, smoothedEndX, smoothedEndY, 
+      { radius: targetRadius, margin: TARGET_CONFIG.margin }
+    );
+    
+    // Update workflow state based on target hits (even when not framed)
+    workflowState = updateWorkflowState(workflowState, targets);
+    
+    // Draw targets based on framing status
     if (isFramed) {
-      const targetRadius = canvas.width * TARGET_CONFIG.radiusRatio;
-      const targets = getTargetsAndHits(
-        canvas.width, canvas.height, smoothedEndX, smoothedEndY, 
-        { radius: targetRadius, margin: TARGET_CONFIG.margin }
-      );
-      
-      // Update workflow state based on target hits
-      workflowState = updateWorkflowState(workflowState, targets);
-      
-      // Draw targets according to workflow
+      // When framed: show current target and completed targets
       drawCurrentWorkflowTarget(ctx, targets, workflowState);
       
       // Show workflow progress only if no framing alert is shown
@@ -216,6 +221,9 @@ Promise.all([
           showAlert('Workflow Complete! All targets hit!', '#00ff88');
         }
       }
+    } else if (workflowState.completedSteps.some(step => step)) {
+      // When not framed but has completed targets: show only completed targets
+      drawCompletedTargetsOnly(ctx, targets, workflowState);
     }
 
     // Draw face mesh
