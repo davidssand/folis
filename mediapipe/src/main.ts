@@ -222,7 +222,7 @@ Promise.all([
     const targetRadius = canvas.width * DRAWING_CONFIG.TARGET.radiusRatio;
     const targets = getTargetsAndHits(
       canvas.width, canvas.height, smoothedEndX, smoothedEndY, 
-      { radius: targetRadius, margin: DRAWING_CONFIG.TARGET.DEFAULT_MARGIN }
+      { radius: targetRadius, margin: DRAWING_CONFIG.TARGET.margin }
     );
     
     // Update workflow state based on target hits (even when not framed)

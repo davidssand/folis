@@ -36,15 +36,15 @@ const DRAWING_CONFIG = {
     pulseAmplitude: 0.2
   },
   TARGET: {
-    DEFAULT_RADIUS: 10,
-    DEFAULT_MARGIN: 80,
-    BOTTOM_OFFSET: 70,
+    radius: 10,
+    margin: 80,
+    bottomOffset: 70,
     radiusRatio: 0.15
   },
   ANIMATION: {
-    PULSE_FREQUENCY: 8,
-    PULSE_AMPLITUDE: 0.2,
-    SPARKLE_RATIO: 0.8
+    pulseFrequency: 8,
+    pulseAmplitude: 0.2,
+    sparkleRatio: 0.8
   }
 };
 
@@ -267,9 +267,9 @@ export function drawArrow(ctx: CanvasRenderingContext2D, startX: number, startY:
  * Each target is {x, y, radius}. Returns [{x, y, radius, hit: boolean}, ...]
  */
 export function getTargetsAndHits(canvasWidth: number, canvasHeight: number, pointX: number, pointY: number, opts?: {radius?: number, margin?: number}) {
-    const targetRadius = opts?.radius ?? DRAWING_CONFIG.TARGET.DEFAULT_RADIUS;
-    const targetMargin = opts?.margin ?? DRAWING_CONFIG.TARGET.DEFAULT_MARGIN;
-    const targetBottomY = canvasHeight - targetRadius - DRAWING_CONFIG.TARGET.BOTTOM_OFFSET;
+    const targetRadius = opts?.radius ?? DRAWING_CONFIG.TARGET.radius;
+    const targetMargin = opts?.margin ?? DRAWING_CONFIG.TARGET.margin;
+    const targetBottomY = canvasHeight - targetRadius - DRAWING_CONFIG.TARGET.bottomOffset;
     
     const targets = [
       { x: canvasWidth / 2, y: targetBottomY, radius: targetRadius },
@@ -370,7 +370,7 @@ export function drawCompletedTarget(ctx: CanvasRenderingContext2D, targetX: numb
       
       // Animation timing
       const currentTime = Date.now() / 1000;
-      const pulseFactor = isHit ? 1 + DRAWING_CONFIG.ANIMATION.PULSE_AMPLITUDE * Math.sin(currentTime * DRAWING_CONFIG.ANIMATION.PULSE_FREQUENCY) : 1;
+      const pulseFactor = isHit ? 1 + DRAWING_CONFIG.ANIMATION.pulseAmplitude * Math.sin(currentTime * DRAWING_CONFIG.ANIMATION.pulseFrequency) : 1;
       const animatedRadius = targetRadius * pulseFactor;
       
       // Enhanced shadow for mobile visibility
@@ -423,7 +423,7 @@ export function drawCompletedTarget(ctx: CanvasRenderingContext2D, targetX: numb
         ctx.lineWidth = 1;
         
         // Draw cross lines for sparkle effect
-        const sparkleLength = animatedRadius * DRAWING_CONFIG.ANIMATION.SPARKLE_RATIO;
+        const sparkleLength = animatedRadius * DRAWING_CONFIG.ANIMATION.sparkleRatio;
         ctx.beginPath();
         ctx.moveTo(targetX - sparkleLength, targetY);
         ctx.lineTo(targetX + sparkleLength, targetY);
