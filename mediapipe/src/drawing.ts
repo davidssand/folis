@@ -1,7 +1,7 @@
 export function drawHeadOvalGuide(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
   const ovalCenterX = canvas.width / 2;
   const ovalCenterY = canvas.height / 2;
-  const ovalRadiusX = canvas.width * 0.22;
+  const ovalRadiusX = canvas.width * 0.40;
   const ovalRadiusY = canvas.height * 0.40;
   ctx.save();
   ctx.globalAlpha = 0.18;

@@ -97,7 +97,7 @@ Promise.all([
       results.multiFaceLandmarks[0],
       canvas.width,
       canvas.height,
-      { minDist: 0.25 * canvas.width, maxDist: 0.35 * canvas.width, xThresh: 0.10 * canvas.width, yThresh: 0.10 * canvas.height }
+      { minDist: 0.50 * canvas.width, maxDist: 0.70 * canvas.width, xThresh: 0.10 * canvas.width, yThresh: 0.10 * canvas.height }
     );
     const { isXFramed, isYFramed, isZFramed, isFramed, avgX, avgY, centerDistX, centerDistY, extremeDistX, minDist, maxDist } = framing;
     const faceCenterX = avgX;
@@ -157,12 +157,12 @@ Promise.all([
       }
     }
 
-    updateInfoTable({
-      lx, ly, rx, ry, centerDistX, centerDistY, extremeDistX, minDist, maxDist,
-      isXFramed, isYFramed, isZFramed, isFramed,
-      canvasWidth: canvas.width, nx, ny, 
-      pitch, yaw, roll
-    });
+    // updateInfoTable({
+    //   lx, ly, rx, ry, centerDistX, centerDistY, extremeDistX, minDist, maxDist,
+    //   isXFramed, isYFramed, isZFramed, isFramed,
+    //   canvasWidth: canvas.width, nx, ny, 
+    //   pitch, yaw, roll
+    // });
 
     for (const faceLandmarks of results.multiFaceLandmarks) {
       drawFaceMesh(ctx, faceLandmarks, canvas, drawConnectors, drawLandmarks, FaceMesh);
