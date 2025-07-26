@@ -25,23 +25,24 @@ export function computeFraming(
   const { minX, maxX } = minMaxX(landmarks, canvasWidth);
   const canvasCenterX = canvasWidth / 2;
   const canvasCenterY = canvasHeight / 1.5;
-  const centerDistX = Math.abs(avgX - canvasCenterX);
-  const centerDistY = Math.abs(avgY - canvasCenterY);
+  
+  // Use relative positioning instead of absolute distances
+  const centerDistX = avgX - canvasCenterX;
+  const centerDistY = avgY - canvasCenterY;
   const extremeDistX = maxX - minX;
-  const minDist = opts?.minDist ?? 0.25 * canvasWidth;
-  const maxDist = opts?.maxDist ?? 0.35 * canvasWidth;
-  const xThresh = opts?.xThresh ?? 0.10 * canvasWidth;
-  const yThresh = opts?.yThresh ?? 0.10 * canvasHeight;
+  
+  // Use relative thresholds based on canvas size
+  const minDist = opts?.minDist ?? canvasWidth * 0.25;
+  const maxDist = opts?.maxDist ?? canvasWidth * 0.35;
+  const xThresh = opts?.xThresh ?? canvasWidth * 0.10;
+  const yThresh = opts?.yThresh ?? canvasHeight * 0.10;
 
-  const isXFramed = centerDistX < xThresh;
-  const isYFramed = centerDistY < yThresh;
-  let isZFramed = false;
-  if (extremeDistX > minDist) {
-    if (extremeDistX < maxDist) {
-      isZFramed = true;
-    }
-  }
+  // Simplified framing logic using relative positioning
+  const isXFramed = centerDistX > -xThresh && centerDistX < xThresh;
+  const isYFramed = centerDistY > -yThresh && centerDistY < yThresh;
+  const isZFramed = extremeDistX > minDist && extremeDistX < maxDist;
   const isFramed = isXFramed && isYFramed && isZFramed;
+  
   return {
     isXFramed,
     isYFramed,

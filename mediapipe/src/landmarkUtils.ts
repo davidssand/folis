@@ -4,35 +4,31 @@
 export type Landmark = { x: number, y: number, z?: number };
 
 export function averageXY(landmarks: Landmark[], width: number, height: number) {
-  let sumX = 0, sumY = 0;
-  for (const lm of landmarks) {
-    sumX += lm.x * width;
-    sumY += lm.y * height;
-  }
+  const sum = landmarks.reduce((acc, lm) => ({
+    x: acc.x + lm.x * width,
+    y: acc.y + lm.y * height
+  }), { x: 0, y: 0 });
+  
   return {
-    avgX: sumX / landmarks.length,
-    avgY: sumY / landmarks.length
+    avgX: sum.x / landmarks.length,
+    avgY: sum.y / landmarks.length
   };
 }
 
 export function minMaxX(landmarks: Landmark[], width: number) {
-  let minX = Infinity, maxX = -Infinity;
-  for (const lm of landmarks) {
-    const x = lm.x * width;
-    if (x < minX) minX = x;
-    if (x > maxX) maxX = x;
-  }
-  return { minX, maxX };
+  const xValues = landmarks.map(lm => lm.x * width);
+  return { 
+    minX: Math.min(...xValues), 
+    maxX: Math.max(...xValues) 
+  };
 }
 
 export function minMaxY(landmarks: Landmark[], height: number) {
-  let minY = Infinity, maxY = -Infinity;
-  for (const lm of landmarks) {
-    const y = lm.y * height;
-    if (y < minY) minY = y;
-    if (y > maxY) maxY = y;
-  }
-  return { minY, maxY };
+  const yValues = landmarks.map(lm => lm.y * height);
+  return { 
+    minY: Math.min(...yValues), 
+    maxY: Math.max(...yValues) 
+  };
 }
 
 export function distance2D(x1: number, y1: number, x2: number, y2: number) {

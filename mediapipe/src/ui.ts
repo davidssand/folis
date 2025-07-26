@@ -1,20 +1,37 @@
-export function updateInfoTable(d: Record<string, any>) {
+// Configuration constants
+const UI_CONFIG = {
+  TABLE: {
+    position: 'absolute',
+    top: '20px',
+    right: '20px',
+    background: 'rgba(255,255,255,0.85)',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    fontFamily: 'sans-serif',
+    fontSize: '15px',
+    zIndex: '1000',
+    minWidth: '260px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+    padding: '8px'
+  },
+  COLORS: {
+    boolean: {
+      true: '#3366ff',
+      false: '#888'
+    }
+  }
+};
+
+export function updateInfoTable(data: Record<string, any>) {
   let infoTable = document.getElementById('face-info-table') as HTMLTableElement | null;
+  
   if (!infoTable) {
     infoTable = document.createElement('table');
     infoTable.id = 'face-info-table';
-    infoTable.style.position = 'absolute';
-    infoTable.style.top = '20px';
-    infoTable.style.right = '20px';
-    infoTable.style.background = 'rgba(255,255,255,0.85)';
-    infoTable.style.border = '1px solid #ccc';
-    infoTable.style.borderRadius = '8px';
-    infoTable.style.fontFamily = 'sans-serif';
-    infoTable.style.fontSize = '15px';
-    infoTable.style.zIndex = '1000';
-    infoTable.style.minWidth = '260px';
-    infoTable.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-    infoTable.style.padding = '8px';
+    
+    // Apply styles
+    Object.assign(infoTable.style, UI_CONFIG.TABLE);
+    
     infoTable.innerHTML = `
       <thead>
         <tr>
@@ -26,25 +43,25 @@ export function updateInfoTable(d: Record<string, any>) {
     `;
     document.body.appendChild(infoTable);
   }
+  
   const tbody = infoTable.querySelector('tbody')!;
-  let rows = '';
-  for (const key in d) {
-    if (Object.prototype.hasOwnProperty.call(d, key)) {
-      const value = d[key];
-      let displayValue: string;
-      let style = '';
-      if (typeof value === 'number') {
-        displayValue = value.toFixed(2);
-      } else if (typeof value === 'boolean') {
-        displayValue = value ? 'Yes' : 'No';
-        // Optionally color booleans for visibility
-        style = `color:${value ? '#3366ff' : '#888'};font-weight:bold;`;
-      } else {
-        displayValue = String(value);
-      }
-      rows += `<tr><td>${key}</td><td style="${style}">${displayValue}</td></tr>`;
+  const rows = Object.keys(data).map((key: string) => {
+    const value = data[key];
+    let displayValue: string;
+    let style = '';
+    
+    if (typeof value === 'number') {
+      displayValue = value.toFixed(2);
+    } else if (typeof value === 'boolean') {
+      displayValue = value ? 'Yes' : 'No';
+      style = `color:${UI_CONFIG.COLORS.boolean[value.toString() as keyof typeof UI_CONFIG.COLORS.boolean]};font-weight:bold;`;
+    } else {
+      displayValue = String(value);
     }
-  }
+    
+    return `<tr><td>${key}</td><td style="${style}">${displayValue}</td></tr>`;
+  }).join('');
+  
   tbody.innerHTML = rows;
 }
 
