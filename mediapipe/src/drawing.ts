@@ -2,7 +2,7 @@
 const DRAWING_CONFIG = {
   OVAL: {
     centerYRatio: 0.5,
-    radiusRatio: 0.35,
+    radiusRatio: 0.30,
     glowOffset: 10,
     glowAlpha: 0.15,
     mainAlpha: 0.12,
@@ -33,7 +33,7 @@ const DRAWING_CONFIG = {
     backgroundAlpha: 0.8
   },
   TARGET: {
-    DEFAULT_RADIUS: 20,
+    DEFAULT_RADIUS: 10,
     DEFAULT_MARGIN: 80,
     BOTTOM_OFFSET: 20
   },

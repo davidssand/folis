@@ -18,17 +18,7 @@ const CONFIG = {
     lengthMultiplier: 1.35,
     yBias: 0.70,
     smoothingAlpha: 0.3
-  },
-  FRAMING: {
-    minDistRatio: 0.47,
-    maxDistRatio: 0.55,
-    xThreshRatio: 0.10,
-    yThreshRatio: 0.10
-  },
-  TARGET: {
-    radiusRatio: 0.15,
-    margin: 80
-  },
+  }, 
   ARROW: {
     maxLength: 50,
     lengthRatio: 0.25,
@@ -169,18 +159,10 @@ Promise.all([
     const framing = computeFraming(
       results.multiFaceLandmarks[0],
       canvas.width,
-      canvas.height,
-      {
-        minDist: CONFIG.FRAMING.minDistRatio * canvas.width,
-        maxDist: CONFIG.FRAMING.maxDistRatio * canvas.width,
-        xThresh: CONFIG.FRAMING.xThreshRatio * canvas.width,
-        yThresh: CONFIG.FRAMING.yThreshRatio * canvas.height
-      }
+      canvas.height
     );
     
-    const { isXFramed, isYFramed, isZFramed, isFramed, avgX, avgY } = framing;
-    const canvasCenterX = canvas.width / 2;
-    const canvasCenterY = canvas.height / 2;
+    const { isTooLeft, isTooRight, isTooLow, isTooHigh, isZFramed, isFramed, avgX, avgY } = framing;
     
     // Update status indicator
     updateStatusIndicator(isFramed);
@@ -194,16 +176,14 @@ Promise.all([
     const arrowLength = Math.min(CONFIG.ARROW.maxLength, canvas.width * CONFIG.ARROW.lengthRatio) * pulseFactor;
     const arrowColor = '#ff6b35';
     
-    if (!isXFramed) {
-      const isTooRight = avgX > canvasCenterX;
+    if (isTooLeft || isTooRight) {
       const arrowPositionX = isTooRight ? canvas.width - 60 : 60;
       const arrowDirectionX = isTooRight ? -arrowLength : arrowLength;
       const arrowLabel = isTooRight ? '←' : '→';
       drawArrow(ctx, arrowPositionX, canvas.height / 2, arrowDirectionX, 0, arrowColor, arrowLabel);
     }
     
-    if (!isYFramed) {
-      const isTooLow = avgY > canvasCenterY;
+    if (isTooLow || isTooHigh) {
       const arrowPositionY = isTooLow ? canvas.height * 0.8 : canvas.height * 0.2;
       const arrowDirectionY = isTooLow ? -arrowLength : arrowLength;
       const arrowLabel = isTooLow ? '↑' : '↓';

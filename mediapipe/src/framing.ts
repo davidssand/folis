@@ -1,9 +1,18 @@
 // framing.ts
 import { Landmark, averageXY, minMaxX } from './landmarkUtils.js';
 
+// Threshold constants
+const minDistThreshold = 0.47;
+const maxDistThreshold = 0.55;
+const XThreshold = 0.10;
+const LowThreshold = 0.15;
+const HighThreshold = 0.10;
+
 export interface FramingResult {
-  isXFramed: boolean;
-  isYFramed: boolean;
+  isTooLeft: boolean;
+  isTooRight: boolean;
+  isTooLow: boolean;
+  isTooHigh: boolean;
   isZFramed: boolean;
   isFramed: boolean;
   avgX: number;
@@ -19,12 +28,11 @@ export function computeFraming(
   landmarks: Landmark[],
   canvasWidth: number,
   canvasHeight: number,
-  opts?: { minDist?: number; maxDist?: number; xThresh?: number; yThresh?: number }
 ): FramingResult {
   const { avgX, avgY } = averageXY(landmarks, canvasWidth, canvasHeight);
   const { minX, maxX } = minMaxX(landmarks, canvasWidth);
   const canvasCenterX = canvasWidth / 2;
-  const canvasCenterY = canvasHeight / 1.5;
+  const canvasCenterY = canvasHeight / 2;
   
   // Use relative positioning instead of absolute distances
   const centerDistX = avgX - canvasCenterX;
@@ -32,20 +40,25 @@ export function computeFraming(
   const extremeDistX = maxX - minX;
   
   // Use relative thresholds based on canvas size
-  const minDist = opts?.minDist ?? canvasWidth * 0.25;
-  const maxDist = opts?.maxDist ?? canvasWidth * 0.35;
-  const xThresh = opts?.xThresh ?? canvasWidth * 0.10;
-  const yThresh = opts?.yThresh ?? canvasHeight * 0.10;
+  const minDist = canvasWidth * minDistThreshold;
+  const maxDist = canvasWidth * maxDistThreshold;
+  const xThresh = canvasWidth * XThreshold;
+  const lowThresh = canvasHeight * LowThreshold;
+  const highThresh = canvasHeight * HighThreshold;
 
   // Simplified framing logic using relative positioning
-  const isXFramed = centerDistX > -xThresh && centerDistX < xThresh;
-  const isYFramed = centerDistY > -yThresh && centerDistY < yThresh;
+  const isTooLeft = centerDistX < -xThresh;
+  const isTooRight = centerDistX > xThresh;
+  const isTooLow = centerDistY > lowThresh;
+  const isTooHigh = centerDistY < -highThresh;
   const isZFramed = extremeDistX > minDist && extremeDistX < maxDist;
-  const isFramed = isXFramed && isYFramed && isZFramed;
+  const isFramed = !isTooLeft && !isTooRight && !isTooLow && !isTooHigh && isZFramed;
   
   return {
-    isXFramed,
-    isYFramed,
+    isTooLeft,
+    isTooRight,
+    isTooLow,
+    isTooHigh,
     isZFramed,
     isFramed,
     avgX,
