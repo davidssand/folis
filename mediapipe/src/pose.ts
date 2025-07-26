@@ -9,6 +9,21 @@ const POSE_CONFIG = {
   RAD_TO_DEG: 180 / Math.PI
 };
 
+// Landmark indices for key facial points
+export const LANDMARK_INDICES = {
+  leftEye: 468,
+  rightEye: 473,
+  mouth: 13,
+  nose: 1
+};
+
+// Nose line configuration
+export const NOSE_LINE_CONFIG = {
+  lengthMultiplier: 1.35,
+  yBias: 0.70,
+  smoothingAlpha: 0.3
+};
+
 export function normalizeVec(vector: { x: number, y: number, z: number }) {
   const vectorLength = Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
   return { x: vector.x / vectorLength, y: vector.y / vectorLength, z: vector.z / vectorLength };

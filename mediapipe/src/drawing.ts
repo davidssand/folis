@@ -2,7 +2,7 @@
 const DRAWING_CONFIG = {
   OVAL: {
     centerYRatio: 0.5,
-    radiusRatio: 0.30,
+    radiusRatio: 0.35,
     glowOffset: 10,
     glowAlpha: 0.15,
     mainAlpha: 0.12,
@@ -14,9 +14,9 @@ const DRAWING_CONFIG = {
   },
   FACE_MESH: {
     alpha: 0.8,
-    color: '#FF3030',
+    color: 'white',
     lineWidth: 2,
-    radius: 1.5
+    radius: 2
   },
   MESSAGE: {
     font: 'bold 24px -apple-system, BlinkMacSystemFont, sans-serif',
@@ -33,7 +33,7 @@ const DRAWING_CONFIG = {
     backgroundAlpha: 0.8
   },
   TARGET: {
-    DEFAULT_RADIUS: 10,
+    DEFAULT_RADIUS: 20,
     DEFAULT_MARGIN: 80,
     BOTTOM_OFFSET: 20
   },
@@ -42,6 +42,19 @@ const DRAWING_CONFIG = {
     PULSE_AMPLITUDE: 0.2,
     SPARKLE_RATIO: 0.8
   }
+};
+
+// Arrow animation configuration
+export const ARROW_CONFIG = {
+  maxLength: 50,
+  lengthRatio: 0.25,
+  pulseAmplitude: 0.2
+};
+
+// Target configuration
+export const TARGET_CONFIG = {
+  radiusRatio: 0.15,
+  margin: 80
 };
 
 export function drawHeadOvalGuide(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {

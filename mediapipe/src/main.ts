@@ -1,30 +1,10 @@
 // Minimal Mediapipe Face Landmarks app in TypeScript
 import { setupCamera } from './camera.js';
-import { drawHeadOvalGuide, drawFaceMesh, drawArrow, getTargetsAndHits, drawTarget } from './drawing.js';
+import { drawHeadOvalGuide, drawFaceMesh, drawArrow, getTargetsAndHits, drawTarget, ARROW_CONFIG, TARGET_CONFIG } from './drawing.js';
 import { updateInfoTable, removeInfoTable } from './ui.js';
 import { setupFaceMesh } from './faceMesh.js';
-import { computePoseAngles, computeNoseLine, getSmoothedNoseLineEnd } from './pose.js';
+import { computePoseAngles, computeNoseLine, getSmoothedNoseLineEnd, LANDMARK_INDICES, NOSE_LINE_CONFIG } from './pose.js';
 import { computeFraming } from './framing.js';
-
-// Configuration constants
-const CONFIG = {
-  LANDMARK_INDICES: {
-    leftEye: 468,
-    rightEye: 473,
-    mouth: 13,
-    nose: 1
-  },
-  NOSE_LINE: {
-    lengthMultiplier: 1.35,
-    yBias: 0.70,
-    smoothingAlpha: 0.3
-  }, 
-  ARROW: {
-    maxLength: 50,
-    lengthRatio: 0.25,
-    pulseAmplitude: 0.2
-  }
-};
 
 let isInitialized = false;
 
@@ -118,11 +98,10 @@ Promise.all([
 
     // Use the first detected face for info and checks
     const landmarks = results.multiFaceLandmarks[0];
-    const { leftEye, rightEye, mouth, nose } = CONFIG.LANDMARK_INDICES;
-    const leftEyePoint = landmarks[leftEye];
-    const rightEyePoint = landmarks[rightEye];
-    const mouthPoint = landmarks[mouth];
-    const nosePoint = landmarks[nose];
+    const leftEyePoint = landmarks[LANDMARK_INDICES.leftEye];
+    const rightEyePoint = landmarks[LANDMARK_INDICES.rightEye];
+    const mouthPoint = landmarks[LANDMARK_INDICES.mouth];
+    const nosePoint = landmarks[LANDMARK_INDICES.nose];
 
     // If any key point is missing, skip
     if (!leftEyePoint || !rightEyePoint || !mouthPoint || !nosePoint) {
@@ -135,14 +114,14 @@ Promise.all([
 
     // 3D coordinates for pose estimation
     const { pitch, yaw, roll, zN } = computePoseAngles(leftEyePoint, rightEyePoint, nosePoint, mouthPoint);
-    const noseLineLength = canvas.width * CONFIG.NOSE_LINE.lengthMultiplier;
+    const noseLineLength = canvas.width * NOSE_LINE_CONFIG.lengthMultiplier;
     const { noseCanvasX, noseCanvasY, endX, endY } = computeNoseLine(
       nosePoint, zN, canvas.width, canvas.height, 
-      CONFIG.NOSE_LINE.yBias, noseLineLength
+      NOSE_LINE_CONFIG.yBias, noseLineLength
     );
 
     const { smoothedEndX, smoothedEndY } = getSmoothedNoseLineEnd(
-      endX, endY, CONFIG.NOSE_LINE.smoothingAlpha
+      endX, endY, NOSE_LINE_CONFIG.smoothingAlpha
     );
 
     // Draw nose line
@@ -156,13 +135,11 @@ Promise.all([
     ctx.restore();
 
     // Compute framing
-    const framing = computeFraming(
-      results.multiFaceLandmarks[0],
-      canvas.width,
-      canvas.height
-    );
+    const framing = computeFraming(landmarks, canvas.width, canvas.height);
     
     const { isTooLeft, isTooRight, isTooLow, isTooHigh, isZFramed, isFramed, avgX, avgY } = framing;
+    const canvasCenterX = canvas.width / 2;
+    const canvasCenterY = canvas.height / 2;
     
     // Update status indicator
     updateStatusIndicator(isFramed);
@@ -172,8 +149,8 @@ Promise.all([
 
     // Draw animated arrows
     const currentTime = Date.now() / 500;
-    const pulseFactor = 1 + CONFIG.ARROW.pulseAmplitude * Math.sin(currentTime);
-    const arrowLength = Math.min(CONFIG.ARROW.maxLength, canvas.width * CONFIG.ARROW.lengthRatio) * pulseFactor;
+    const pulseFactor = 1 + ARROW_CONFIG.pulseAmplitude * Math.sin(currentTime);
+    const arrowLength = Math.min(ARROW_CONFIG.maxLength, canvas.width * ARROW_CONFIG.lengthRatio) * pulseFactor;
     const arrowColor = '#ff6b35';
     
     if (isTooLeft || isTooRight) {
@@ -192,10 +169,10 @@ Promise.all([
 
     // Draw targets if framed
     if (isFramed) {
-      const targetRadius = canvas.width * CONFIG.TARGET.radiusRatio;
+      const targetRadius = canvas.width * TARGET_CONFIG.radiusRatio;
       const targets = getTargetsAndHits(
         canvas.width, canvas.height, smoothedEndX, smoothedEndY, 
-        { radius: targetRadius, margin: CONFIG.TARGET.margin }
+        { radius: targetRadius, margin: TARGET_CONFIG.margin }
       );
       for (const target of targets) {
         drawTarget(ctx, target.x, target.y, target.radius, target.hit);
