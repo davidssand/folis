@@ -43,7 +43,9 @@ Promise.all([
   const video = document.getElementById('video') as HTMLVideoElement;
   const canvas = document.getElementById('output') as HTMLCanvasElement;
   const ctx = canvas.getContext('2d')!;
-  const alertContainer = document.getElementById('alert-container') as HTMLDivElement;
+  const framingAlert = document.getElementById('framing-alert') as HTMLDivElement;
+  const stepAlert = document.getElementById('step-alert') as HTMLDivElement;
+  const completionAlert = document.getElementById('completion-alert') as HTMLDivElement;
   const statusIndicator = document.getElementById('status-indicator') as HTMLDivElement;
   const loadingElement = document.getElementById('loading') as HTMLDivElement;
   const resetButton = document.getElementById('reset-button') as HTMLButtonElement;
@@ -65,26 +67,48 @@ Promise.all([
     }
   }
 
-  // Show alert with animation
-  function showAlert(message: string, color: string = '#ff3333') {
-    if (alertContainer) {
-      alertContainer.textContent = message;
-      alertContainer.style.background = color;
-      alertContainer.classList.add('show');
+  // Show framing alert
+  function showFramingAlert(message: string) {
+    if (framingAlert) {
+      framingAlert.textContent = message;
+      framingAlert.classList.add('show');
     }
   }
 
-  // Hide alert
-  function hideAlert() {
-    if (alertContainer) {
-      alertContainer.classList.remove('show');
+  // Show step alert
+  function showStepAlert(message: string) {
+    if (stepAlert) {
+      stepAlert.textContent = message;
+      stepAlert.classList.add('show');
+    }
+  }
+
+  // Show completion alert
+  function showCompletionAlert(message: string) {
+    if (completionAlert) {
+      completionAlert.textContent = message;
+      completionAlert.classList.add('show');
+    }
+  }
+
+  // Hide all alerts
+  function hideAllAlerts() {
+    if (framingAlert) framingAlert.classList.remove('show');
+    if (stepAlert) stepAlert.classList.remove('show');
+    if (completionAlert) completionAlert.classList.remove('show');
+  }
+
+  // Hide specific alert
+  function hideAlert(alertElement: HTMLDivElement) {
+    if (alertElement) {
+      alertElement.classList.remove('show');
     }
   }
 
   // Reset workflow
   function resetWorkflow() {
     workflowState = createWorkflowState();
-    hideAlert();
+    hideAllAlerts();
   }
 
   // Simplified alert logic
@@ -94,12 +118,15 @@ Promise.all([
     // Always prioritize framing alerts over workflow alerts
     if (!isZFramed) {
       const message = extremeDistX <= minDist ? 'Aproxime-se' : 'Afaste-se';
-      showAlert(message, '#ff6b35');
-    } else if (isTooLeft || isTooRight || isTooHigh || isTooLow) {
-      // Hide any existing alerts when positioning arrows are shown
-      hideAlert();
-    } else if (isZFramed && workflowState.isComplete) {
-      hideAlert();
+      showFramingAlert(message);
+      hideAlert(stepAlert);
+      hideAlert(completionAlert);
+    } else {
+        hideAlert(framingAlert)
+    }
+    if (isTooLeft || isTooRight || isTooHigh || isTooLow || workflowState.isComplete) {
+      // Hide all alerts when positioning arrows are shown or workflow is complete
+      hideAllAlerts();
     }
   }
 
@@ -115,7 +142,7 @@ Promise.all([
     // If no face, clear info table and alert
     if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
       removeInfoTable();
-      hideAlert();
+      hideAllAlerts();
       updateStatusIndicator(false);
       // Reset workflow state when no face is detected
       workflowState = createWorkflowState();
@@ -133,7 +160,7 @@ Promise.all([
     // If any key point is missing, skip
     if (!leftEyePoint || !rightEyePoint || !mouthPoint || !nosePoint) {
       removeInfoTable();
-      hideAlert();
+      hideAllAlerts();
       updateStatusIndicator(false);
       ctx.restore();
       return;
@@ -216,16 +243,18 @@ Promise.all([
         // Show hold progress if currently holding
         if (workflowState.holdStartTime !== null && workflowState.holdDuration > 0) {
           const progressPercent = Math.round((workflowState.holdDuration / workflowState.requiredHoldTime) * 100);
-          showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName} (${progressPercent}%)`, '#00aaff');
+          showStepAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName} (${progressPercent}%)`);
         } else {
-          showAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName}`, '#00aaff');
+          showStepAlert(`Step ${workflowState.currentStep + 1}/3: ${currentStepName}`);
         }
-      } else {
-        showAlert('Workflow Complete! All targets hit!', '#00ff88');
       }
     } else if (workflowState.completedSteps.some(step => step)) {
       // When not framed but has completed targets: show only completed targets
       drawCompletedTargetsOnly(ctx, targets, workflowState);
+    }
+
+    if (workflowState.isComplete) {
+        showCompletionAlert('Workflow Complete! All targets hit!');
     }
 
     // Draw face mesh

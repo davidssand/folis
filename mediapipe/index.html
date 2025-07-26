@@ -91,12 +91,10 @@
       border-radius: 0;
     }
 
-    #alert-container {
+    .alert-container {
       position: absolute;
-      top: 80px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255, 51, 51, 0.95);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       color: white;
@@ -107,15 +105,32 @@
       text-align: center;
       opacity: 0;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 16px rgba(255, 51, 51, 0.3);
       z-index: 200;
       min-width: 120px;
       max-width: 90%;
     }
 
-    #alert-container.show {
+    .alert-container.show {
       opacity: 1;
       transform: translateX(-50%) scale(1.05);
+    }
+
+    #framing-alert {
+      top: 80px;
+      background: rgba(255, 107, 53, 0.95);
+      box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+    }
+
+    #step-alert {
+      top: 140px;
+      background: rgba(0, 170, 255, 0.95);
+      box-shadow: 0 4px 16px rgba(0, 170, 255, 0.3);
+    }
+
+    #completion-alert {
+      top: 200px;
+      background: rgba(0, 255, 136, 0.95);
+      box-shadow: 0 4px 16px rgba(0, 255, 136, 0.3);
     }
 
     #status-indicator {
@@ -212,9 +227,20 @@
         font-size: 1.3rem;
       }
       
-      #alert-container {
+      .alert-container {
         font-size: 1rem;
         padding: 0.6rem 1.2rem;
+      }
+      
+      #framing-alert {
+        top: 70px;
+      }
+      
+      #step-alert {
+        top: 70px;
+      }
+      
+      #completion-alert {
         top: 70px;
       }
       
@@ -235,10 +261,21 @@
         font-size: 1.2rem;
       }
       
-      #alert-container {
-        top: 60px;
+      .alert-container {
         font-size: 1rem;
         padding: 0.5rem 1rem;
+      }
+      
+      #framing-alert {
+        top: 60px;
+      }
+      
+      #step-alert {
+        top: 100px;
+      }
+      
+      #completion-alert {
+        top: 140px;
       }
       
       #instructions {
@@ -264,7 +301,9 @@
         <canvas id="output"></canvas>
       </div>
       
-      <div id="alert-container"></div>
+      <div id="framing-alert" class="alert-container"></div>
+      <div id="step-alert" class="alert-container"></div>
+      <div id="completion-alert" class="alert-container"></div>
       
       <!-- <div id="instructions">
         Position your face within the guide and follow the arrows
