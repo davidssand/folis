@@ -30,12 +30,16 @@ const DRAWING_CONFIG = {
     font: 'bold 24px -apple-system, BlinkMacSystemFont, sans-serif',
     labelOffset: 45,
     padding: 8,
-    backgroundAlpha: 0.8
+    backgroundAlpha: 0.8,
+    maxLength: 100,
+    lengthRatio: 0.5,
+    pulseAmplitude: 0.2
   },
   TARGET: {
-    DEFAULT_RADIUS: 20,
+    DEFAULT_RADIUS: 10,
     DEFAULT_MARGIN: 80,
-    BOTTOM_OFFSET: 20
+    BOTTOM_OFFSET: 70,
+    radiusRatio: 0.15
   },
   ANIMATION: {
     PULSE_FREQUENCY: 8,
@@ -44,18 +48,8 @@ const DRAWING_CONFIG = {
   }
 };
 
-// Arrow animation configuration
-export const ARROW_CONFIG = {
-  maxLength: 100,
-  lengthRatio: 0.5,
-  pulseAmplitude: 0.2
-};
-
-// Target configuration
-export const TARGET_CONFIG = {
-  radiusRatio: 0.15,
-  margin: 80
-};
+// Export DRAWING_CONFIG for external use
+export { DRAWING_CONFIG };
 
 // Workflow state management
 export interface WorkflowState {

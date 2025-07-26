@@ -6,8 +6,7 @@ import {
   drawArrow, 
   getTargetsAndHits, 
   drawTarget, 
-  ARROW_CONFIG, 
-  TARGET_CONFIG,
+  DRAWING_CONFIG,
   createWorkflowState,
   updateWorkflowState,
   drawCurrentWorkflowTarget,
@@ -203,8 +202,8 @@ Promise.all([
 
     // Draw animated arrows
     const currentTime = Date.now() / 500;
-    const pulseFactor = 1 + ARROW_CONFIG.pulseAmplitude * Math.sin(currentTime);
-    const arrowLength = Math.min(ARROW_CONFIG.maxLength, canvas.width * ARROW_CONFIG.lengthRatio) * pulseFactor;
+    const pulseFactor = 1 + DRAWING_CONFIG.ARROW.pulseAmplitude * Math.sin(currentTime);
+    const arrowLength = Math.min(DRAWING_CONFIG.ARROW.maxLength, canvas.width * DRAWING_CONFIG.ARROW.lengthRatio) * pulseFactor;
     const arrowColor = '#ff6b35';
     
     if (isTooLeft || isTooRight) {
@@ -220,10 +219,10 @@ Promise.all([
     }
 
     // Always calculate targets for hit detection, regardless of framing
-    const targetRadius = canvas.width * TARGET_CONFIG.radiusRatio;
+    const targetRadius = canvas.width * DRAWING_CONFIG.TARGET.radiusRatio;
     const targets = getTargetsAndHits(
       canvas.width, canvas.height, smoothedEndX, smoothedEndY, 
-      { radius: targetRadius, margin: TARGET_CONFIG.margin }
+      { radius: targetRadius, margin: DRAWING_CONFIG.TARGET.DEFAULT_MARGIN }
     );
     
     // Update workflow state based on target hits (even when not framed)
