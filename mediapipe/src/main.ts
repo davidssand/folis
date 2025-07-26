@@ -31,6 +31,7 @@ Promise.all([
   const video = document.getElementById('video') as HTMLVideoElement;
   const canvas = document.getElementById('output') as HTMLCanvasElement;
   const ctx = canvas.getContext('2d')!;
+  const alertContainer = document.getElementById('alert-container') as HTMLDivElement;
 
   // Landmark indices for key points
   const leftEyeIdx = 468;
@@ -116,14 +117,10 @@ Promise.all([
     }
 
     if (alertMsg) {
-        ctx.save();
-        ctx.font = 'bold 38px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.globalAlpha = 0.92;
-        ctx.fillStyle = '#bba000';
-        ctx.fillText(alertMsg, canvas.width / 2, canvas.height / 3);
-        ctx.restore();
+        alertContainer.textContent = alertMsg;
+        alertContainer.style.opacity = '0.92';
+    } else {
+        alertContainer.style.opacity = '0';
     }
 
     // Draw animated arrows instead of text alerts
