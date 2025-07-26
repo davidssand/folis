@@ -8,7 +8,7 @@ import { computeFraming } from './framing.js';
 
 let prevLineEndX: number | null = null;
 let prevLineEndY: number | null = null;
-
+let isInitialized = false;
 
 // Load drawing utils and face mesh scripts
 const drawingUtilsScript = document.createElement('script');
@@ -32,12 +32,51 @@ Promise.all([
   const canvas = document.getElementById('output') as HTMLCanvasElement;
   const ctx = canvas.getContext('2d')!;
   const alertContainer = document.getElementById('alert-container') as HTMLDivElement;
+  const statusIndicator = document.getElementById('status-indicator') as HTMLDivElement;
+  const loadingElement = document.getElementById('loading') as HTMLDivElement;
 
   // Landmark indices for key points
   const leftEyeIdx = 468;
   const rightEyeIdx = 473;
   const mouthIdx = 13;
   const noseIdx = 1;
+
+  // Hide loading screen and show camera
+  function hideLoading() {
+    if (loadingElement) {
+      loadingElement.style.opacity = '0';
+      setTimeout(() => {
+        loadingElement.style.display = 'none';
+      }, 300);
+    }
+  }
+
+  // Update status indicator
+  function updateStatusIndicator(isFramed: boolean) {
+    if (statusIndicator) {
+      if (isFramed) {
+        statusIndicator.classList.add('framed');
+      } else {
+        statusIndicator.classList.remove('framed');
+      }
+    }
+  }
+
+  // Show alert with animation
+  function showAlert(message: string, color: string = '#ff3333') {
+    if (alertContainer) {
+      alertContainer.textContent = message;
+      alertContainer.style.background = color;
+      alertContainer.classList.add('show');
+    }
+  }
+
+  // Hide alert
+  function hideAlert() {
+    if (alertContainer) {
+      alertContainer.classList.remove('show');
+    }
+  }
 
   // Main detection and drawing logic
   function onResults(results: any) {
@@ -51,6 +90,8 @@ Promise.all([
     // If no face, clear info table and alert
     if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
       removeInfoTable();
+      hideAlert();
+      updateStatusIndicator(false);
       ctx.restore();
       return;
     }
@@ -65,23 +106,19 @@ Promise.all([
     // If any key point is missing, skip
     if (!leftEye || !rightEye || !mouth || !nose) {
       removeInfoTable();
+      hideAlert();
+      updateStatusIndicator(false);
       ctx.restore();
       return;
     }
 
-    // Calculate key coordinates
-    const lx = leftEye.x * canvas.width, ly = leftEye.y * canvas.height;
-    const rx = rightEye.x * canvas.width, ry = rightEye.y * canvas.height;
-    const mx = mouth.x * canvas.width, my = mouth.y * canvas.height;
-    const nx = nose.x * canvas.width, ny = nose.y * canvas.height;
-
     // 3D coordinates for pose estimation
     const { pitch, yaw, roll, zN } = computePoseAngles(leftEye, rightEye, nose, mouth);
-    const noseLineLength = 100; // pixels
-    const yBias = 0.45;
+    const noseLineLength = canvas.width * 1.35; // pixels
+    const yBias = 0.70;
     const { noseCanvasX, noseCanvasY, endX, endY } = computeNoseLine(nose, zN, canvas.width, canvas.height, yBias, noseLineLength);
 
-    const { smoothedEndX, smoothedEndY } = getSmoothedNoseLineEnd(endX, endY, 0.2);
+    const { smoothedEndX, smoothedEndY } = getSmoothedNoseLineEnd(endX, endY, 0.3);
 
     ctx.save();
     ctx.strokeStyle = "#00ccff";
@@ -97,61 +134,66 @@ Promise.all([
       results.multiFaceLandmarks[0],
       canvas.width,
       canvas.height,
-      { minDist: 0.50 * canvas.width, maxDist: 0.70 * canvas.width, xThresh: 0.10 * canvas.width, yThresh: 0.10 * canvas.height }
+      { minDist: 0.47 * canvas.width, maxDist: 0.55 * canvas.width, xThresh: 0.10 * canvas.width, yThresh: 0.10 * canvas.height }
     );
     const { isXFramed, isYFramed, isZFramed, isFramed, avgX, avgY, centerDistX, centerDistY, extremeDistX, minDist, maxDist } = framing;
     const faceCenterX = avgX;
     const faceCenterY = avgY;
     const canvasCenterX = canvas.width / 2;
     const canvasCenterY = canvas.height / 1.5;
+    
+    // Update status indicator
+    updateStatusIndicator(isFramed);
+
+    // Handle alerts
     let alertMsg = '';
-    let alertColor = '';
+    let alertColor = '#ff3333';
+    
     if (!isZFramed) {
       if (extremeDistX <= minDist) {
-        alertMsg = 'Closer';
-        alertColor = '#ff3333';
+        alertMsg = 'Move Closer';
+        alertColor = '#ff6b35';
       } else if (extremeDistX >= maxDist) {
-        alertMsg = 'Farther';
-        alertColor = '#ff3333';
+        alertMsg = 'Move Back';
+        alertColor = '#ff6b35';
       }
     }
 
     if (alertMsg) {
-        alertContainer.textContent = alertMsg;
-        alertContainer.style.opacity = '0.92';
+      showAlert(alertMsg, alertColor);
     } else {
-        alertContainer.style.opacity = '0';
+      hideAlert();
     }
 
     // Draw animated arrows instead of text alerts
     // Animation: arrows pulse in length
     const t = Date.now() / 500;
     const pulse = 1 + 0.2 * Math.sin(t);
-    const arrowLength = 32 * pulse;
-    const arrowColor = '#ff3333';
-
+    const arrowLength = Math.min(50, canvas.width * 0.25) * pulse; // Much larger arrows
+    const arrowColor = '#ff6b35';
     if (!isXFramed) {
       if (faceCenterX > canvasCenterX) {
         // Too far right, move left
-        drawArrow(ctx, canvas.width - 60, canvas.height / 2, -arrowLength, 0, arrowColor, 'Left');
+        drawArrow(ctx, canvas.width - 60, canvas.height / 2, -arrowLength, 0, arrowColor, '←');
       } else {
         // Too far left, move right
-        drawArrow(ctx, 60, canvas.height / 2, arrowLength, 0, arrowColor, 'Right');
+        drawArrow(ctx, 60, canvas.height / 2, arrowLength, 0, arrowColor, '→');
       }
     }
     if (!isYFramed) {
       if (faceCenterY > canvasCenterY) {
-        // Too low, move up
-        drawArrow(ctx, canvas.width / 2, canvas.height - 50, 0, -arrowLength, arrowColor, 'Up');
+        // Too low, move up - much more prominent position
+        drawArrow(ctx, canvas.width / 2, canvas.height * 0.8, 0, -arrowLength, arrowColor, '↑');
       } else {
-        // Too high, move down
-        drawArrow(ctx, canvas.width / 2, 0, 0, arrowLength, arrowColor, 'Down');
+        // Too high, move down - much more prominent position
+        drawArrow(ctx, canvas.width / 2, canvas.height * 0.2, 0, arrowLength, arrowColor, '↓');
       }
     }
 
     // --- Draw targets if isFramed ---
     if (isFramed) {
-      const targets = getTargetsAndHits(canvas.width, canvas.height, smoothedEndX, smoothedEndY, { radius: 10, margin: 60 });
+      const targetRadius = canvas.width * 0.15; // Increased target size
+      const targets = getTargetsAndHits(canvas.width, canvas.height, smoothedEndX, smoothedEndY, { radius: targetRadius, margin: 80 });
       for (const t of targets) {
         drawTarget(ctx, t.x, t.y, t.radius, t.hit);
       }
@@ -173,9 +215,26 @@ Promise.all([
 
   // Start the camera and face mesh
   async function main() {
-    await setupCamera(video);
-    video.play();
-    await setupFaceMesh(video, canvas, ctx, onResults, FaceMesh, drawConnectors, drawLandmarks);
+    try {
+      await setupCamera(video);
+      video.play();
+      await setupFaceMesh(video, canvas, ctx, onResults, FaceMesh, drawConnectors, drawLandmarks);
+      
+      // Hide loading screen after initialization
+      if (!isInitialized) {
+        isInitialized = true;
+        hideLoading();
+      }
+    } catch (error) {
+      console.error('Failed to initialize camera:', error);
+      if (loadingElement) {
+        loadingElement.innerHTML = `
+          <div style="color: #ff6b6b; margin-bottom: 1rem;">⚠️</div>
+          <div>Camera access denied</div>
+          <div style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">Please allow camera access and refresh</div>
+        `;
+      }
+    }
   }
 
   main();
