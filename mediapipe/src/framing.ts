@@ -6,7 +6,7 @@ const minDistThreshold = 0.47;
 const maxDistThreshold = 0.55;
 const XThreshold = 0.10;
 const LowThreshold = 0.15;
-const HighThreshold = 0.10;
+const HighThreshold = 0.07;
 
 export interface FramingResult {
   isTooLeft: boolean;
@@ -43,14 +43,12 @@ export function computeFraming(
   const minDist = canvasWidth * minDistThreshold;
   const maxDist = canvasWidth * maxDistThreshold;
   const xThresh = canvasWidth * XThreshold;
-  const lowThresh = canvasHeight * LowThreshold;
-  const highThresh = canvasHeight * HighThreshold;
 
   // Simplified framing logic using relative positioning
   const isTooLeft = centerDistX < -xThresh;
   const isTooRight = centerDistX > xThresh;
-  const isTooLow = centerDistY > lowThresh;
-  const isTooHigh = centerDistY < -highThresh;
+  const isTooLow = centerDistY > (canvasHeight * LowThreshold);
+  const isTooHigh = centerDistY < -(canvasHeight * HighThreshold);
   const isZFramed = extremeDistX > minDist && extremeDistX < maxDist;
   const isFramed = !isTooLeft && !isTooRight && !isTooLow && !isTooHigh && isZFramed;
   
