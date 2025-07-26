@@ -1,8 +1,8 @@
 // Configuration constants
 const DRAWING_CONFIG = {
   OVAL: {
-    centerYRatio: 0.5,
-    radiusRatio: 0.35,
+    centerYRatio: 0.45,
+    radiusRatio: 0.30,
     glowOffset: 10,
     glowAlpha: 0.15,
     mainAlpha: 0.12,

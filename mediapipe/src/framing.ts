@@ -2,8 +2,8 @@
 import { Landmark, averageXY, minMaxX } from './landmarkUtils.js';
 
 // Threshold constants
-const minDistThreshold = 0.47;
-const maxDistThreshold = 0.55;
+const minDistThreshold = 0.40;
+const maxDistThreshold = 0.50;
 const XThreshold = 0.10;
 const LowThreshold = 0.15;
 const HighThreshold = 0.07;
