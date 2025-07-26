@@ -103,7 +103,7 @@ export function drawFaceMesh(
   ctx.restore();
 }
 
-export function drawArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number, color: string, label?: string) {
+export function drawArrow(ctx: CanvasRenderingContext2D, startX: number, startY: number, deltaX: number, deltaY: number, color: string, label?: string) {
   ctx.save();
   
   // Enhanced shadow for better visibility on mobile
@@ -112,9 +112,9 @@ export function drawArrow(ctx: CanvasRenderingContext2D, x: number, y: number, d
   ctx.shadowOffsetX = DRAWING_CONFIG.ARROW.shadowOffset;
   ctx.shadowOffsetY = DRAWING_CONFIG.ARROW.shadowOffset;
 
-  const angle = Math.atan2(dy, dx);
-  const hx = x + dx;
-  const hy = y + dy;
+  const arrowAngle = Math.atan2(deltaY, deltaX);
+  const arrowEndX = startX + deltaX;
+  const arrowEndY = startY + deltaY;
 
   // Draw label if provided (using emoji arrows for mobile)
   if (label) {
@@ -128,8 +128,8 @@ export function drawArrow(ctx: CanvasRenderingContext2D, x: number, y: number, d
     ctx.textBaseline = 'middle';
     
     // Place label near the arrowhead
-    const labelX = hx + DRAWING_CONFIG.ARROW.labelOffset * Math.cos(angle);
-    const labelY = hy + DRAWING_CONFIG.ARROW.labelOffset * Math.sin(angle);
+    const labelX = arrowEndX + DRAWING_CONFIG.ARROW.labelOffset * Math.cos(arrowAngle);
+    const labelY = arrowEndY + DRAWING_CONFIG.ARROW.labelOffset * Math.sin(arrowAngle);
     
     // Add background for better readability
     const textMetrics = ctx.measureText(label);
@@ -154,42 +154,42 @@ export function drawArrow(ctx: CanvasRenderingContext2D, x: number, y: number, d
  * Each target is {x, y, radius}. Returns [{x, y, radius, hit: boolean}, ...]
  */
 export function getTargetsAndHits(canvasWidth: number, canvasHeight: number, pointX: number, pointY: number, opts?: {radius?: number, margin?: number}) {
-    const radius = opts?.radius ?? DRAWING_CONFIG.TARGET.DEFAULT_RADIUS;
-    const margin = opts?.margin ?? DRAWING_CONFIG.TARGET.DEFAULT_MARGIN;
-    const bottomY = canvasHeight - radius - DRAWING_CONFIG.TARGET.BOTTOM_OFFSET;
+    const targetRadius = opts?.radius ?? DRAWING_CONFIG.TARGET.DEFAULT_RADIUS;
+    const targetMargin = opts?.margin ?? DRAWING_CONFIG.TARGET.DEFAULT_MARGIN;
+    const targetBottomY = canvasHeight - targetRadius - DRAWING_CONFIG.TARGET.BOTTOM_OFFSET;
     
     const targets = [
-      { x: canvasWidth / 2, y: bottomY, radius },
-      { x: canvasWidth - margin, y: bottomY, radius },
-      { x: margin, y: bottomY, radius }
+      { x: canvasWidth / 2, y: targetBottomY, radius: targetRadius },
+      { x: canvasWidth - targetMargin, y: targetBottomY, radius: targetRadius },
+      { x: targetMargin, y: targetBottomY, radius: targetRadius }
     ];
     
     return targets.map(target => ({ 
       ...target, 
-      hit: Math.hypot(pointX - target.x, pointY - target.y) < radius 
+      hit: Math.hypot(pointX - target.x, pointY - target.y) < targetRadius 
     }));
   }
   
   // Enhanced target drawing for mobile
-  export function drawTarget(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, hit: boolean) {
+  export function drawTarget(ctx: CanvasRenderingContext2D, targetX: number, targetY: number, targetRadius: number, isHit: boolean) {
       ctx.save();
       
       // Animation timing
-      const t = Date.now() / 1000;
-      const pulse = hit ? 1 + DRAWING_CONFIG.ANIMATION.PULSE_AMPLITUDE * Math.sin(t * DRAWING_CONFIG.ANIMATION.PULSE_FREQUENCY) : 1;
-      const animatedRadius = radius * pulse;
+      const currentTime = Date.now() / 1000;
+      const pulseFactor = isHit ? 1 + DRAWING_CONFIG.ANIMATION.PULSE_AMPLITUDE * Math.sin(currentTime * DRAWING_CONFIG.ANIMATION.PULSE_FREQUENCY) : 1;
+      const animatedRadius = targetRadius * pulseFactor;
       
       // Enhanced shadow for mobile visibility
-      const shadowColor = hit ? 'rgba(0, 255, 136, 0.6)' : 'rgba(0, 170, 255, 0.4)';
-      const shadowBlur = hit ? 20 : 12;
+      const shadowColor = isHit ? 'rgba(0, 255, 136, 0.6)' : 'rgba(0, 170, 255, 0.4)';
+      const shadowBlur = isHit ? 20 : 12;
       ctx.shadowColor = shadowColor;
       ctx.shadowBlur = shadowBlur;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       
       // Outer ring with gradient
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, animatedRadius);
-      if (hit) {
+      const gradient = ctx.createRadialGradient(targetX, targetY, 0, targetX, targetY, animatedRadius);
+      if (isHit) {
         gradient.addColorStop(0, '#00ff88');
         gradient.addColorStop(0.7, '#00cc44');
         gradient.addColorStop(1, 'rgba(0, 204, 68, 0.3)');
@@ -201,28 +201,28 @@ export function getTargetsAndHits(canvasWidth: number, canvasHeight: number, poi
       
       // Draw outer ring
       ctx.beginPath();
-      ctx.arc(x, y, animatedRadius, 0, 2 * Math.PI);
+      ctx.arc(targetX, targetY, animatedRadius, 0, 2 * Math.PI);
       ctx.strokeStyle = gradient;
       ctx.lineWidth = 3;
-      ctx.globalAlpha = hit ? 1.0 : 0.8;
+      ctx.globalAlpha = isHit ? 1.0 : 0.8;
       ctx.stroke();
       
       // Draw inner circle
       ctx.beginPath();
-      ctx.arc(x, y, animatedRadius * 0.6, 0, 2 * Math.PI);
-      ctx.fillStyle = hit ? '#00ff88' : '#00aaff';
-      ctx.globalAlpha = hit ? 0.3 : 0.2;
+      ctx.arc(targetX, targetY, animatedRadius * 0.6, 0, 2 * Math.PI);
+      ctx.fillStyle = isHit ? '#00ff88' : '#00aaff';
+      ctx.globalAlpha = isHit ? 0.3 : 0.2;
       ctx.fill();
       
       // Draw center dot
       ctx.beginPath();
-      ctx.arc(x, y, animatedRadius * 0.2, 0, 2 * Math.PI);
+      ctx.arc(targetX, targetY, animatedRadius * 0.2, 0, 2 * Math.PI);
       ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = hit ? 0.9 : 0.6;
+      ctx.globalAlpha = isHit ? 0.9 : 0.6;
       ctx.fill();
       
       // Add sparkle effect when hit
-      if (hit) {
+      if (isHit) {
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 0.8;
         ctx.strokeStyle = '#ffffff';
@@ -231,10 +231,10 @@ export function getTargetsAndHits(canvasWidth: number, canvasHeight: number, poi
         // Draw cross lines for sparkle effect
         const sparkleLength = animatedRadius * DRAWING_CONFIG.ANIMATION.SPARKLE_RATIO;
         ctx.beginPath();
-        ctx.moveTo(x - sparkleLength, y);
-        ctx.lineTo(x + sparkleLength, y);
-        ctx.moveTo(x, y - sparkleLength);
-        ctx.lineTo(x, y + sparkleLength);
+        ctx.moveTo(targetX - sparkleLength, targetY);
+        ctx.lineTo(targetX + sparkleLength, targetY);
+        ctx.moveTo(targetX, targetY - sparkleLength);
+        ctx.lineTo(targetX, targetY + sparkleLength);
         ctx.stroke();
       }
       

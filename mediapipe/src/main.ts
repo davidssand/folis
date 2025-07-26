@@ -180,7 +180,7 @@ Promise.all([
     
     const { isXFramed, isYFramed, isZFramed, isFramed, avgX, avgY } = framing;
     const canvasCenterX = canvas.width / 2;
-    const canvasCenterY = canvas.height / 1.5;
+    const canvasCenterY = canvas.height / 2;
     
     // Update status indicator
     updateStatusIndicator(isFramed);
@@ -189,25 +189,25 @@ Promise.all([
     handleAlerts(framing);
 
     // Draw animated arrows
-    const t = Date.now() / 500;
-    const pulse = 1 + CONFIG.ARROW.pulseAmplitude * Math.sin(t);
-    const arrowLength = Math.min(CONFIG.ARROW.maxLength, canvas.width * CONFIG.ARROW.lengthRatio) * pulse;
+    const currentTime = Date.now() / 500;
+    const pulseFactor = 1 + CONFIG.ARROW.pulseAmplitude * Math.sin(currentTime);
+    const arrowLength = Math.min(CONFIG.ARROW.maxLength, canvas.width * CONFIG.ARROW.lengthRatio) * pulseFactor;
     const arrowColor = '#ff6b35';
     
     if (!isXFramed) {
       const isTooRight = avgX > canvasCenterX;
-      const x = isTooRight ? canvas.width - 60 : 60;
-      const dx = isTooRight ? -arrowLength : arrowLength;
-      const label = isTooRight ? '←' : '→';
-      drawArrow(ctx, x, canvas.height / 2, dx, 0, arrowColor, label);
+      const arrowPositionX = isTooRight ? canvas.width - 60 : 60;
+      const arrowDirectionX = isTooRight ? -arrowLength : arrowLength;
+      const arrowLabel = isTooRight ? '←' : '→';
+      drawArrow(ctx, arrowPositionX, canvas.height / 2, arrowDirectionX, 0, arrowColor, arrowLabel);
     }
     
     if (!isYFramed) {
       const isTooLow = avgY > canvasCenterY;
-      const y = isTooLow ? canvas.height * 0.8 : canvas.height * 0.2;
-      const dy = isTooLow ? -arrowLength : arrowLength;
-      const label = isTooLow ? '↑' : '↓';
-      drawArrow(ctx, canvas.width / 2, y, 0, dy, arrowColor, label);
+      const arrowPositionY = isTooLow ? canvas.height * 0.8 : canvas.height * 0.2;
+      const arrowDirectionY = isTooLow ? -arrowLength : arrowLength;
+      const arrowLabel = isTooLow ? '↑' : '↓';
+      drawArrow(ctx, canvas.width / 2, arrowPositionY, 0, arrowDirectionY, arrowColor, arrowLabel);
     }
 
     // Draw targets if framed

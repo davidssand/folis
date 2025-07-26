@@ -44,25 +44,25 @@ export function updateInfoTable(data: Record<string, any>) {
     document.body.appendChild(infoTable);
   }
   
-  const tbody = infoTable.querySelector('tbody')!;
-  const rows = Object.keys(data).map((key: string) => {
-    const value = data[key];
+  const tableBody = infoTable.querySelector('tbody')!;
+  const tableRows = Object.keys(data).map((propertyName: string) => {
+    const propertyValue = data[propertyName];
     let displayValue: string;
-    let style = '';
+    let cellStyle = '';
     
-    if (typeof value === 'number') {
-      displayValue = value.toFixed(2);
-    } else if (typeof value === 'boolean') {
-      displayValue = value ? 'Yes' : 'No';
-      style = `color:${UI_CONFIG.COLORS.boolean[value.toString() as keyof typeof UI_CONFIG.COLORS.boolean]};font-weight:bold;`;
+    if (typeof propertyValue === 'number') {
+      displayValue = propertyValue.toFixed(2);
+    } else if (typeof propertyValue === 'boolean') {
+      displayValue = propertyValue ? 'Yes' : 'No';
+      cellStyle = `color:${UI_CONFIG.COLORS.boolean[propertyValue.toString() as keyof typeof UI_CONFIG.COLORS.boolean]};font-weight:bold;`;
     } else {
-      displayValue = String(value);
+      displayValue = String(propertyValue);
     }
     
-    return `<tr><td>${key}</td><td style="${style}">${displayValue}</td></tr>`;
+    return `<tr><td>${propertyName}</td><td style="${cellStyle}">${displayValue}</td></tr>`;
   }).join('');
   
-  tbody.innerHTML = rows;
+  tableBody.innerHTML = tableRows;
 }
 
 export function removeInfoTable() {

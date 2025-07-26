@@ -18,7 +18,7 @@ const CAMERA_CONFIG = {
 };
 
 export async function setupCamera(video: HTMLVideoElement): Promise<void> {
-  const constraints = {
+  const idealConstraints = {
     video: {
       width: { ideal: CAMERA_CONFIG.IDEAL.width, max: CAMERA_CONFIG.MAX.width },
       height: { ideal: CAMERA_CONFIG.IDEAL.height, max: CAMERA_CONFIG.MAX.height },
@@ -36,9 +36,9 @@ export async function setupCamera(video: HTMLVideoElement): Promise<void> {
     }
   };
 
-  async function setupStream(constraints: any, isFallback = false) {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
+  async function setupStream(cameraConstraints: any, isFallback = false) {
+    const mediaStream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
+    video.srcObject = mediaStream;
     
     return new Promise<void>((resolve) => {
       video.onloadedmetadata = () => {
@@ -54,7 +54,7 @@ export async function setupCamera(video: HTMLVideoElement): Promise<void> {
   }
 
   try {
-    return await setupStream(constraints);
+    return await setupStream(idealConstraints);
   } catch (error) {
     console.error('Camera setup failed:', error);
     return await setupStream(fallbackConstraints, true);
